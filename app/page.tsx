@@ -32,7 +32,8 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      const data = raw ? (JSON.parse(raw) as { error?: string }) : {};
 
       if (!res.ok) {
         setError(data.error ?? "Something went wrong.");
@@ -43,8 +44,10 @@ export default function Home() {
       setName("");
       setStartingVibe("chill");
       setSuccess("Your rock has been adopted. Check your phone.");
-    } catch {
-      setError("Failed to submit form.");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Failed to submit form.",
+      );
     } finally {
       setLoading(false);
     }
