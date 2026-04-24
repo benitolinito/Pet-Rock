@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [consentChecked, setConsentChecked] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,6 +31,7 @@ export default function Home() {
           timezone,
           latitude: 40.7128,
           longitude: -74.006,
+          consentChecked,
         }),
       });
 
@@ -43,6 +46,7 @@ export default function Home() {
       setPhone("");
       setName("");
       setStartingVibe("chill");
+      setConsentChecked(false);
       setSuccess("Your rock has been adopted. Check your phone.");
     } catch (error) {
       setError(
@@ -112,6 +116,29 @@ export default function Home() {
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
             />
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-700">
+            <input
+              className="mt-1 h-4 w-4 rounded border-zinc-300"
+              type="checkbox"
+              checked={consentChecked}
+              onChange={(e) => setConsentChecked(e.target.checked)}
+              required
+            />
+            <span>
+              I agree to receive recurring SMS messages from Pet Rock at the
+              number I provided. Message frequency varies. Message and data
+              rates may apply. Reply STOP to unsubscribe and HELP for help.{" "}
+              <Link className="underline" href="/terms">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link className="underline" href="/privacy">
+                Privacy Policy
+              </Link>
+              .
+            </span>
           </label>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}

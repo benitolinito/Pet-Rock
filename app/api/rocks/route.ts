@@ -12,6 +12,7 @@ export async function POST(request: Request) {
       !body.name ||
       !body.startingVibe ||
       !body.timezone ||
+      !body.consentChecked ||
       body.latitude === undefined ||
       body.longitude === undefined
     ) {
