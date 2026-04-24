@@ -1,24 +1,16 @@
 "use client";
-import { Cormorant_Garamond } from "next/font/google";
-import { useEffect, useState } from "react";
-
-const titleFont = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-});
+import { useState } from "react";
 
 export default function Home() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [startingVibe, setStartingVibe] = useState("chill");
-  const [timezone, setTimezone] = useState("");
+  const [timezone, setTimezone] = useState(() =>
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
