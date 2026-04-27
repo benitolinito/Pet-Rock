@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizePhoneNumber } from "@/lib/phone";
+import { smsConsentDisclosure } from "@/lib/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/twilio";
 
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
     }
 
     const phoneNumber = normalizePhoneNumber(body.phone);
+    const consentCheckedAt = new Date().toISOString();
 
     const personalityState = {
       mood: "content",
@@ -45,6 +47,8 @@ export async function POST(request: Request) {
         longitude: body.longitude,
         timezone: body.timezone,
         personality_state: personalityState,
+        consent_checked_at: consentCheckedAt,
+        consent_text: smsConsentDisclosure,
       })
       .select()
       .single();

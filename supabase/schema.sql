@@ -13,6 +13,9 @@ create table if not exists rocks (
   timezone text not null,
   personality_state jsonb not null,
   paused boolean not null default false,
+  consent_checked_at timestamptz,
+  consent_text text,
+  opted_out_at timestamptz,
   last_daily_sent_on date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
