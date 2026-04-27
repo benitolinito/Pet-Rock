@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { siteConfig, smsConsentDisclosure } from "@/lib/site";
+import { sampleMessages, siteConfig, smsConsentDisclosure } from "@/lib/site";
 
 export default function Home() {
   const [phone, setPhone] = useState("");
@@ -88,13 +88,54 @@ export default function Home() {
                 </p>
               </div>
               <div className="rounded-xl border border-stone-300 bg-white/80 p-4">
+                <h2 className="text-sm font-semibold text-zinc-900">
+                  Project details
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-700">
+                  {siteConfig.legalName}
+                  <br />
+                  Operated by {siteConfig.operatorName}
+                  <br />
+                  {siteConfig.projectType}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-stone-300 bg-white/80 p-4">
                 <h2 className="text-sm font-semibold text-zinc-900">Support</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-700">
                   Email {siteConfig.supportEmail}
                   <br />
+                  {siteConfig.supportPhone}
+                  <br />
                   {siteConfig.supportHours}
+                  <br />
+                  {siteConfig.supportResponseTime}
                 </p>
               </div>
+              <div className="rounded-xl border border-stone-300 bg-white/80 p-4">
+                <h2 className="text-sm font-semibold text-zinc-900">
+                  Service status
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-700">
+                  {siteConfig.launchDescription}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-stone-300 bg-white/80 p-5">
+              <h2 className="text-sm font-semibold text-zinc-900">
+                About the project
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-zinc-700">
+                {siteConfig.about}
+              </p>
+              <p className="mt-3 text-sm leading-7 text-zinc-700">
+                Pet Rock is operated by {siteConfig.operatorName}. The project
+                accepts users who voluntarily sign up through this website and
+                agree to receive recurring SMS messages.
+              </p>
             </div>
 
             <div className="rounded-xl border border-stone-300 bg-white/80 p-5">
@@ -114,6 +155,72 @@ export default function Home() {
                 <Link className="underline" href="/sms-policy">
                   SMS Policy
                 </Link>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-stone-300 bg-white/80 p-5">
+              <h2 className="text-sm font-semibold text-zinc-900">
+                How enrollment works
+              </h2>
+              <ol className="mt-3 space-y-2 text-sm leading-7 text-zinc-700">
+                <li>1. Submit your mobile number and rock details.</li>
+                <li>2. Check the consent box to join the SMS program.</li>
+                <li>3. Receive a welcome text from your adopted rock.</li>
+                <li>4. Reply STOP to opt out or HELP for help at any time.</li>
+              </ol>
+            </div>
+
+            <div className="rounded-xl border border-stone-300 bg-white/80 p-5">
+              <h2 className="text-sm font-semibold text-zinc-900">
+                Sample messages
+              </h2>
+              <div className="mt-3 space-y-3">
+                {sampleMessages.map((message) => (
+                  <p
+                    key={message}
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-zinc-700"
+                  >
+                    {message}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-stone-300 bg-white/80 p-5">
+              <h2 className="text-sm font-semibold text-zinc-900">FAQ</h2>
+              <div className="mt-3 space-y-4 text-sm leading-7 text-zinc-700">
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    What messages will I receive?
+                  </p>
+                  <p>
+                    Users receive a welcome message, conversational replies, and
+                    periodic weather-themed updates from their adopted rock.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    How often will I hear from Pet Rock?
+                  </p>
+                  <p>
+                    Message frequency varies based on the product flow and user
+                    interaction.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    How do I stop messages?
+                  </p>
+                  <p>Reply STOP at any time to unsubscribe.</p>
+                </div>
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    How do I get help?
+                  </p>
+                  <p>
+                    Reply HELP or contact {siteConfig.supportEmail} for support.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -228,6 +335,22 @@ export default function Home() {
           </form>
         </section>
       </main>
+      <footer className="mx-auto mt-8 flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-stone-300 pt-5 text-sm text-zinc-600">
+        <div>
+          Operated by {siteConfig.operatorName}. Contact {siteConfig.supportEmail}.
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <Link className="underline" href="/terms">
+            Terms
+          </Link>
+          <Link className="underline" href="/privacy">
+            Privacy Policy
+          </Link>
+          <Link className="underline" href="/sms-policy">
+            SMS Policy
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
