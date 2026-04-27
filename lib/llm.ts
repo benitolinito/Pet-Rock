@@ -1,9 +1,37 @@
 import OpenAI from "openai";
 
-export async function updatePersonalityState(...) {}
-export async function generateRockMessage(...) {}
+type PersonalityStateInput = {
+  mood: string;
+  energy: number;
+  quirks: string[];
+  weatherFondness: Record<string, number>;
+  recentFocus: string | null;
+  daysOld: number;
+};
 
+type MessageRecord = {
+  direction: string;
+  body: string;
+};
 
+export async function updatePersonalityState(_args: {
+  state: PersonalityStateInput;
+  weatherSummary: string;
+  inboundMessage?: string;
+}) {
+  void _args;
+  throw new Error("updatePersonalityState is not implemented.");
+}
+
+export async function generateRockMessage(_args: {
+  state: PersonalityStateInput;
+  weatherSummary: string;
+  recentMessages: MessageRecord[];
+  rockName: string;
+}) {
+  void _args;
+  throw new Error("generateRockMessage is not implemented.");
+}
 
 function getEnv(name: string) {
   const value = process.env[name];

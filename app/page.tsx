@@ -65,7 +65,7 @@ export default function Home() {
           <div className="max-w-2xl space-y-6">
             <div className="space-y-3">
               <p className="text-sm font-medium uppercase tracking-[0.12em] text-zinc-500">
-                SMS companion service
+                Opt-in SMS application
               </p>
               <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">
                 Adopt a pet rock that texts back.
@@ -83,8 +83,9 @@ export default function Home() {
                   Program details
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-700">
-                  Messages include onboarding, conversational replies, and
-                  weather-themed updates. Message frequency varies by use.
+                  Messages include onboarding texts, conversational replies, and
+                  periodic weather-aware updates. Message frequency varies by
+                  use.
                 </p>
               </div>
               <div className="rounded-xl border border-stone-300 bg-white/80 p-4">
@@ -132,9 +133,9 @@ export default function Home() {
                 {siteConfig.about}
               </p>
               <p className="mt-3 text-sm leading-7 text-zinc-700">
-                Pet Rock is operated by {siteConfig.operatorName}. The project
-                accepts users who voluntarily sign up through this website and
-                agree to receive recurring SMS messages.
+                Pet Rock is operated by {siteConfig.operatorName}. Users join
+                the program by voluntarily submitting the signup form on this
+                website and agreeing to receive recurring SMS messages.
               </p>
             </div>
 
@@ -195,7 +196,8 @@ export default function Home() {
                   </p>
                   <p>
                     Users receive a welcome message, conversational replies, and
-                    periodic weather-themed updates from their adopted rock.
+                    periodic weather-aware updates after enrolling on the
+                    website.
                   </p>
                 </div>
                 <div>
@@ -229,10 +231,10 @@ export default function Home() {
         <section className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
           <div className="space-y-3">
             <h2 className="text-2xl font-semibold tracking-tight">
-              Start your signup
+              Start your SMS signup
             </h2>
             <p className="text-sm leading-6 text-zinc-600">
-              Enter your mobile number to activate the Pet Rock SMS program.
+              Enter your mobile number to enroll in the Pet Rock SMS program.
             </p>
           </div>
 
