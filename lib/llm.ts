@@ -1,5 +1,10 @@
 import OpenAI from "openai";
 
+export async function updatePersonalityState(...) {}
+export async function generateRockMessage(...) {}
+
+
+
 function getEnv(name: string) {
   const value = process.env[name];
 
