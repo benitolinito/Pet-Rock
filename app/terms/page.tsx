@@ -15,17 +15,28 @@ export default function TermsPage() {
           <h1 className="text-3xl font-semibold tracking-tight">
             Pet Rock Terms and SMS Program Terms
           </h1>
+          <p className="text-sm text-zinc-500">Last updated: April 27, 2026</p>
           <p className="text-sm leading-7 text-zinc-700">
             These Terms govern your use of the Pet Rock website and SMS
             program operated by {siteConfig.legalName}.
           </p>
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold">Project identity</h2>
+            <p className="text-sm leading-7 text-zinc-700">
+              {siteConfig.legalName} is operated by {siteConfig.operatorName}
+              as an {siteConfig.projectType.toLowerCase()}. Support contact:
+              {" "}
+              {siteConfig.supportEmail}.
+            </p>
+          </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Program description</h2>
             <p className="text-sm leading-7 text-zinc-700">
               Pet Rock is an SMS-first companion service. By enrolling, you
               agree to receive recurring conversational and service-related text
               messages, including onboarding messages, replies, and periodic
-              weather-themed updates.
+              weather-themed updates. Enrollment occurs through the signup form
+              on this website.
             </p>
           </section>
           <section className="space-y-2">

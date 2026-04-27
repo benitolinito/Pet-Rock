@@ -15,11 +15,21 @@ export default function PrivacyPage() {
           <h1 className="text-3xl font-semibold tracking-tight">
             Pet Rock Privacy Policy
           </h1>
+          <p className="text-sm text-zinc-500">Last updated: April 27, 2026</p>
           <p className="text-sm leading-7 text-zinc-700">
             This Privacy Policy explains how {siteConfig.legalName} collects,
             uses, and protects information submitted through the Pet Rock
             website and SMS program.
           </p>
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold">Operator contact</h2>
+            <p className="text-sm leading-7 text-zinc-700">
+              Pet Rock is operated by {siteConfig.operatorName}. Contact
+              {" "}
+              {siteConfig.supportEmail} for support. Support hours are{" "}
+              {siteConfig.supportHours}. {siteConfig.supportResponseTime}
+            </p>
+          </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Information we collect</h2>
             <p className="text-sm leading-7 text-zinc-700">
@@ -33,7 +43,8 @@ export default function PrivacyPage() {
             <p className="text-sm leading-7 text-zinc-700">
               We use this information to send requested text messages, manage
               subscriptions, provide customer support, prevent abuse, and
-              operate the service.
+              operate the service. We may also use limited technical logs to
+              diagnose delivery issues and respond to support requests.
             </p>
           </section>
           <section className="space-y-2">
@@ -41,7 +52,8 @@ export default function PrivacyPage() {
             <p className="text-sm leading-7 text-zinc-700">
               SMS consent is collected through the signup form on this website.
               Consent records are stored to document enrollment in the messaging
-              program. You can opt out at any time by replying STOP.
+              program. Consent is not a condition of purchase. You can opt out
+              at any time by replying STOP.
             </p>
           </section>
           <section className="space-y-2">
