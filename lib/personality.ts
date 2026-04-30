@@ -25,6 +25,7 @@ export function buildStateUpdatePrompt(args: {
   weatherSummary: string;
   inboundMessage?: string;
 }) {
+  void args;
   // return system + user prompt strings
 }
 
@@ -35,5 +36,6 @@ export function buildMessagePrompt(args: {
   recentMessages: { direction: string; body: string }[];
   rockName: string;
 }) {
+  void args;
   // return system + user prompt strings
 }
