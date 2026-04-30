@@ -80,6 +80,14 @@ function looksLikeRename(text: string) {
   return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
 }
 
+function looksLikeClearHistory(text: string) {
+  return (
+    text === "/clear" ||
+    text === "/clearhistory" ||
+    /^clear (?:chat )?history$/i.test(text.trim())
+  );
+}
+
 async function replyAndLog(args: {
   chatId: string;
   rockId?: string;
@@ -171,6 +179,35 @@ export async function POST(request: Request) {
         text: rockSays(
           name,
           "i have accepted the new name with geological restraint.",
+        ),
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    if (looksLikeClearHistory(text)) {
+      if (!rock) {
+        await replyAndLog({
+          chatId,
+          text: "There is no rock history here yet.",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      await supabase.from("messages").delete().eq("rock_id", rock.id);
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: rockSays(
+          rock.name,
+          "i have cleared the remembered chat history. the visible Telegram chat is still yours to delete if you want it gone.",
         ),
       });
 
