@@ -21,15 +21,13 @@ type DailyRock = {
   last_daily_sent_on: string | null;
 };
 
-// Get the local date and hour for a given timezone
+// Get the local date for a given timezone
 function getLocalParts(timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    hour: "2-digit",
-    hour12: false,
   }).formatToParts(new Date());
 
   const values = Object.fromEntries(
@@ -40,21 +38,18 @@ function getLocalParts(timezone: string) {
 
   return {
     date: `${values.year}-${values.month}-${values.day}`,
-    hour: Number(values.hour),
   };
 }
 
 // Determine if a daily message should be sent for a given rock
 function shouldSendToday(rock: DailyRock) {
-  const { date, hour } = getLocalParts(rock.timezone);
+  const { date } = getLocalParts(rock.timezone);
 
   return {
     localDate: date,
     due:
       rock.telegram_chat_id !== null &&
-      rock.last_daily_sent_on !== date &&
-      hour >= 9 &&
-      hour < 18,
+      rock.last_daily_sent_on !== date,
   };
 }
 
