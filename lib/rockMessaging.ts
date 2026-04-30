@@ -137,6 +137,65 @@ export async function handleInboundRockMessage(args: {
   }
 }
 
+export async function generateDailyRockMessage(args: {
+  supabase: SupabaseClient;
+  channel: MessageChannel;
+  rock: {
+    id: string;
+    name: string;
+    personality_state?: unknown;
+    starting_vibe?: string | null;
+  };
+  weatherSummary: string;
+}) {
+  const fallback = args.channel === "telegram"
+    ? rockSays(
+        args.rock.name,
+        "i have observed the weather. this is my work and my burden.",
+      )
+    : `${args.rock.name} observed the weather. This is its work and its burden.`;
+
+  try {
+    const { data: recentMessages, error } = await args.supabase
+      .from("messages")
+      .select("direction, body")
+      .eq("rock_id", args.rock.id)
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    if (error) {
+      throw error;
+    }
+
+    const generated = await generateRockMessage({
+      state: normalizePersonalityState(args.rock.personality_state),
+      startingVibe: args.rock.starting_vibe ?? "chill",
+      weatherSummary: args.weatherSummary,
+      recentMessages: [
+        ...(recentMessages ?? []).reverse(),
+        {
+          direction: "system",
+          body: "Send a proactive daily weather-aware update. The user did not message first.",
+        },
+      ],
+      rockName: args.rock.name,
+    });
+
+    if (!generated) {
+      return fallback;
+    }
+
+    if (args.channel === "telegram") {
+      return rockSays(args.rock.name, generated);
+    }
+
+    return generated;
+  } catch (error) {
+    console.error("Daily rock message generation failed", error);
+    return fallback;
+  }
+}
+
 function normalizePersonalityState(state: unknown) {
   const fallback = createInitialPersonalityState();
 
