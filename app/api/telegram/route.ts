@@ -161,10 +161,37 @@ function looksLikeHelp(text: string) {
   return normalized === "/help" || normalized === "help" || normalized === "commands";
 }
 
+function looksLikeSettings(text: string) {
+  const normalized = text.trim().toLowerCase();
+
+  return normalized === "/settings" || normalized === "settings" || normalized === "status";
+}
+
+function formatSettings(rock: {
+  name: string;
+  starting_vibe: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  paused: boolean;
+  last_daily_sent_on: string | null;
+}) {
+  return [
+    "Rock settings:",
+    `name: ${rock.name}`,
+    `vibe: ${rock.starting_vibe}`,
+    `coordinates: ${rock.latitude.toFixed(4)}, ${rock.longitude.toFixed(4)}`,
+    `timezone: ${rock.timezone}`,
+    `updates: ${rock.paused ? "paused" : "active"}`,
+    `last daily message: ${rock.last_daily_sent_on ?? "not sent yet"}`,
+  ].join("\n");
+}
+
 // Returns the help text for the user
 function helpText() {
   return [
     "Pet Rock commands:",
+    "/settings or settings - show current rock settings",
     "/start or start - resume updates",
     "/pause or pause - pause updates",
     "/rename Rocky or call my rock Rocky - rename your rock",
@@ -221,7 +248,7 @@ export async function POST(request: Request) {
 
     const { data: rock } = await supabase
       .from("rocks")
-      .select("id, name, paused, personality_state, starting_vibe, latitude, longitude")
+      .select("id, name, paused, personality_state, starting_vibe, latitude, longitude, timezone, last_daily_sent_on")
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 
@@ -254,6 +281,30 @@ export async function POST(request: Request) {
         rockId: rock.id,
         supabase,
         text: helpText(),
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (looksLikeSettings(text)) {
+      if (!rock) {
+        await replyAndLog({
+          chatId,
+          text: "No rock is adopted here yet. Send /start to adopt one.",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: formatSettings(rock),
       });
       return NextResponse.json({ ok: true });
     }
