@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createInitialPersonalityState } from "@/lib/personality";
-import { siteConfig } from "@/lib/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
 
@@ -41,15 +40,27 @@ function getAdoptName(text: string) {
   return name || null;
 }
 
+function getRenameName(text: string) {
+  return text
+    .trim()
+    .replace(/^\/?rename\s+/i, "")
+    .replace(/^call (?:me|it|my rock)\s+/i, "")
+    .trim();
+}
+
+function looksLikeRename(text: string) {
+  return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
+}
+
 function fallbackReply(rockName: string, text: string) {
   const normalized = text.trim().toLowerCase();
 
   if (normalized === "help" || normalized === "/help") {
-    return `${rockName} accepts messages here. Send /rename NewName to rename your rock or /pause to pause updates.`;
+    return `${rockName} accepts messages here. To rename it, say "call my rock NewName". Say "pause" to pause updates.`;
   }
 
   if (normalized === "/pause" || normalized === "pause") {
-    return `${rockName} will be quiet for now. Send /start when you want to resume.`;
+    return `${rockName} will be quiet for now. Say "start" when you want to resume.`;
   }
 
   return `${rockName} heard you. it is still learning how to respond, but it has stored this moment carefully.`;
@@ -117,22 +128,22 @@ export async function POST(request: Request) {
     );
   }
 
-  if (text.startsWith("/rename ")) {
+  if (looksLikeRename(text)) {
     if (!rock) {
       await replyAndLog({
         chatId,
-        text: "Adopt a rock first with /adopt Pebble.",
+        text: "Name your rock first. Send a name like Pebble.",
       });
       return NextResponse.json({ ok: true });
     }
 
-    const name = getAdoptName(text);
+    const name = getRenameName(text);
 
     if (!name) {
       await replyAndLog({
         chatId,
         rockId: rock.id,
-        text: "Send /rename followed by the new rock name.",
+        text: "Tell me the new name, like: call my rock Pebble.",
       });
       return NextResponse.json({ ok: true });
     }
@@ -152,7 +163,7 @@ export async function POST(request: Request) {
       await replyAndLog({
         chatId,
         rockId: rock.id,
-        text: `You already adopted ${rock.name}. Send /rename NewName to rename it.`,
+        text: `You already adopted ${rock.name}. To rename it, say "call my rock NewName".`,
       });
       return NextResponse.json({ ok: true });
     }
@@ -199,14 +210,55 @@ export async function POST(request: Request) {
   }
 
   if (!rock) {
+    if (text === "/start" || text.toLowerCase() === "start") {
+      await replyAndLog({
+        chatId,
+        text: "hello. i am available for adoption. what should your rock be called?",
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    const name = text.replace(/^my rock is named\s+/i, "").trim();
+
+    if (!name || name.startsWith("/")) {
+      await replyAndLog({
+        chatId,
+        text: "Tell me what your rock should be called. For example: Pebble.",
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    const { data: newRock, error } = await supabase
+      .from("rocks")
+      .insert({
+        phone_number: null,
+        telegram_chat_id: chatId,
+        telegram_user_id: telegramUserId,
+        name,
+        starting_vibe: "telegram",
+        latitude: 0,
+        longitude: 0,
+        timezone: "UTC",
+        personality_state: createInitialPersonalityState(),
+        consent_checked_at: new Date().toISOString(),
+        consent_text: "Telegram user started the bot and adopted a rock.",
+      })
+      .select("id")
+      .single();
+
+    if (error || !newRock) {
+      throw new Error(error?.message ?? "Failed to create Telegram rock.");
+    }
+
     await replyAndLog({
       chatId,
-      text: `hello. i am ${siteConfig.name}. adopt a rock with /adopt Pebble.`,
+      rockId: newRock.id,
+      text: `${name} has been adopted. it will observe things and report back when ready.`,
     });
     return NextResponse.json({ ok: true });
   }
 
-  if (text === "/start") {
+  if (text === "/start" || text.toLowerCase() === "start") {
     await supabase
       .from("rocks")
       .update({ paused: false, opted_out_at: null })

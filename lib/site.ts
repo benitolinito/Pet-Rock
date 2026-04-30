@@ -8,7 +8,7 @@ export const siteConfig = {
     "Independent SMS application project",
   description:
     "Pet Rock is an opt-in SMS application that sends conversational and weather-aware text messages to subscribed users.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://pet-rock-hmdeuzk1b-ben-lins-projects.vercel.app/",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://pet-rock-sigma.vercel.app/",
   supportEmail:
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "blin97198@gmail.com",
   supportPhone:
