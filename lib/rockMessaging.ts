@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { generateRockMessage } from "@/lib/llm";
+import { createInitialPersonalityState } from "@/lib/personality";
 
 export type MessageChannel = "sms" | "telegram";
 
@@ -81,6 +83,8 @@ export async function handleInboundRockMessage(args: {
   rock: {
     id: string;
     name: string;
+    personality_state?: unknown;
+    starting_vibe?: string | null;
   };
   body: string;
   inboundProviderSid: string | null;
@@ -92,9 +96,74 @@ export async function handleInboundRockMessage(args: {
     providerSid: args.inboundProviderSid,
   });
 
-  return buildRockReply({
+  const fallbackReply = buildRockReply({
     channel: args.channel,
     rockName: args.rock.name,
     text: args.body,
   });
+
+  try {
+    const { data: recentMessages, error } = await args.supabase
+      .from("messages")
+      .select("direction, body")
+      .eq("rock_id", args.rock.id)
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    if (error) {
+      throw error;
+    }
+
+    const generated = await generateRockMessage({
+      state: normalizePersonalityState(args.rock.personality_state),
+      startingVibe: args.rock.starting_vibe ?? "chill",
+      weatherSummary: "No current weather context is available yet.",
+      recentMessages: (recentMessages ?? []).reverse(),
+      rockName: args.rock.name,
+    });
+
+    if (!generated) {
+      return fallbackReply;
+    }
+
+    if (args.channel === "telegram") {
+      return rockSays(args.rock.name, generated);
+    }
+
+    return generated;
+  } catch (error) {
+    console.error("Rock reply generation failed", error);
+    return fallbackReply;
+  }
+}
+
+function normalizePersonalityState(state: unknown) {
+  const fallback = createInitialPersonalityState();
+
+  if (!state || typeof state !== "object") {
+    return fallback;
+  }
+
+  const candidate = state as Partial<typeof fallback>;
+
+  return {
+    mood: typeof candidate.mood === "string" ? candidate.mood : fallback.mood,
+    energy:
+      typeof candidate.energy === "number" ? candidate.energy : fallback.energy,
+    quirks: Array.isArray(candidate.quirks)
+      ? candidate.quirks.filter((quirk): quirk is string => typeof quirk === "string")
+      : fallback.quirks,
+    weatherFondness:
+      candidate.weatherFondness &&
+      typeof candidate.weatherFondness === "object" &&
+      !Array.isArray(candidate.weatherFondness)
+        ? (candidate.weatherFondness as Record<string, number>)
+        : fallback.weatherFondness,
+    recentFocus:
+      typeof candidate.recentFocus === "string"
+        ? candidate.recentFocus
+        : fallback.recentFocus,
+    daysOld:
+      typeof candidate.daysOld === "number" ? candidate.daysOld : fallback.daysOld,
+  };
 }

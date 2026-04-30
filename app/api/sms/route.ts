@@ -7,6 +7,7 @@ import {
 import { siteConfig } from "@/lib/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+// Creates an XML response for the Twilio API.
 function xml(message: string) {
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${message}</Message></Response>`,
@@ -44,10 +45,15 @@ export async function POST(request: Request) {
   const normalizedBody = body.toUpperCase();
   const messageSid = typeof messageSidRaw === "string" ? messageSidRaw : null;
 
+
   const supabase = createSupabaseAdminClient();
+
+  // Fetch the rock associated with the incoming phone number.
   const { data: rock } = await supabase
     .from("rocks")
-    .select("id, name")
+
+    .select("id, name, personality_state, starting_vibe")
+
     .eq("phone_number", from)
     .single();
 

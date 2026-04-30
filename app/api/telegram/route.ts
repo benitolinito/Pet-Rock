@@ -132,9 +132,10 @@ export async function POST(request: Request) {
 
     const { data: rock } = await supabase
       .from("rocks")
-      .select("id, name, paused")
+      .select("id, name, paused, personality_state, starting_vibe")
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
+
 
     const { data: onboardingSession } = !rock
       ? await supabase
@@ -207,7 +208,7 @@ export async function POST(request: Request) {
         supabase,
         text: rockSays(
           rock.name,
-          "i have cleared the remembered chat history. the visible Telegram chat is still yours to delete if you want it gone.",
+          "i have cleared Pet Rock's remembered history. your visible Telegram chat is unchanged.",
         ),
       });
 
