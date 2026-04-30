@@ -9,6 +9,16 @@ import { getWeather } from "@/lib/weather";
 
 const CRON_CONCURRENCY = 3;
 
+function isAuthorizedCronRequest(request: Request) {
+  const secret = process.env.CRON_SECRET;
+
+  if (!secret) {
+    throw new Error("Missing environment variable: CRON_SECRET");
+  }
+
+  return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
 // Define the structure of a daily rock
 type DailyRock = {
   id: string;
@@ -123,7 +133,11 @@ async function processInBatches<T, R>(
 }
 
 // Main function to handle the daily cron job
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthorizedCronRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const startedAt = Date.now();
   const supabase = createSupabaseAdminClient();
 
