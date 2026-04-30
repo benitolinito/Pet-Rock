@@ -88,6 +88,16 @@ function looksLikeClearHistory(text: string) {
   );
 }
 
+function looksLikeUnadopt(text: string) {
+  return (
+    text === "/unadopt" ||
+    text === "/reset" ||
+    /^reset rock$/i.test(text.trim()) ||
+    /^start over$/i.test(text.trim()) ||
+    /^unadopt$/i.test(text.trim())
+  );
+}
+
 async function replyAndLog(args: {
   chatId: string;
   rockId?: string;
@@ -181,6 +191,33 @@ export async function POST(request: Request) {
           name,
           "i have accepted the new name with geological restraint.",
         ),
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    if (looksLikeUnadopt(text)) {
+      if (!rock) {
+        await supabase
+          .from("telegram_onboarding_sessions")
+          .delete()
+          .eq("telegram_chat_id", chatId);
+        await replyAndLog({
+          chatId,
+          text: "There is no adopted rock here. Send /start to adopt one.",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      await supabase
+        .from("telegram_onboarding_sessions")
+        .delete()
+        .eq("telegram_chat_id", chatId);
+      await supabase.from("rocks").delete().eq("id", rock.id);
+
+      await replyAndLog({
+        chatId,
+        text: "your rock has been unadopted. send /start to adopt a new one. your visible Telegram chat is unchanged.",
       });
 
       return NextResponse.json({ ok: true });
