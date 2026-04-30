@@ -8,7 +8,7 @@ import {
 } from "@/lib/rockMessaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
-import { geocodeLocation } from "@/lib/weather";
+import { geocodeLocation, getTimezone } from "@/lib/weather";
 
 type TelegramUpdate = {
   message?: {
@@ -358,6 +358,8 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
+        const timezone = getTimezone(location.latitude, location.longitude);
+
         const { data: newRock, error } = await supabase
           .from("rocks")
           .insert({
@@ -368,7 +370,7 @@ export async function POST(request: Request) {
             starting_vibe: onboardingSession.starting_vibe,
             latitude: location.latitude,
             longitude: location.longitude,
-            timezone: "UTC",
+            timezone,
             personality_state: createInitialPersonalityState(),
             consent_checked_at: new Date().toISOString(),
             consent_text: "Telegram user started the bot and adopted a rock.",

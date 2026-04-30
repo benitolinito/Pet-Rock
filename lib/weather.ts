@@ -1,3 +1,5 @@
+import tzLookup from "tz-lookup";
+
 function getEnv(name: string) {
   const value = process.env[name];
 
@@ -156,4 +158,8 @@ export async function getWeather(latitude: number, longitude: number) {
   }
 
   return (await response.json()) as WeatherResponse;
+}
+
+export function getTimezone(latitude: number, longitude: number) {
+  return tzLookup(latitude, longitude);
 }
