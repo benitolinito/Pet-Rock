@@ -95,6 +95,35 @@ function looksLikeRename(text: string) {
   return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
 }
 
+//changes pet rock's vibe/personality
+function getChangeVibe(text: string) {
+  const match = text
+    .trim()
+    .match(/^\/?(?:change vibe|set vibe|vibe)(?:\s+to)?\s+(.+)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return getStartingVibe(match[1]);
+}
+
+//changes location that pet rock watches over
+function getChangeLocation(text: string) {
+  const match = text
+    .trim()
+    .match(
+      /^\/?(?:change location|set location|location|watch|move to|watch weather in)(?:\s+to|\s+in)?\s+(.+)$/i,
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  return match[1].trim() || null;
+}
+
+//checks if the user wants to clear the chat history
 function looksLikeClearHistory(text: string) {
   return (
     text === "/clear" ||
@@ -103,6 +132,7 @@ function looksLikeClearHistory(text: string) {
   );
 }
 
+//checks if the user wants to unadopt their pet rock
 function looksLikeUnadopt(text: string) {
   return (
     text === "/unadopt" ||
@@ -113,6 +143,7 @@ function looksLikeUnadopt(text: string) {
   );
 }
 
+//sends a reply and logs it
 async function replyAndLog(args: {
   chatId: string;
   rockId?: string;
@@ -135,6 +166,7 @@ async function replyAndLog(args: {
   });
 }
 
+// Main function to handle incoming Telegram messages
 export async function POST(request: Request) {
   try {
     const secret = request.headers.get("x-telegram-bot-api-secret-token");
@@ -261,6 +293,95 @@ export async function POST(request: Request) {
         text: rockSays(
           rock.name,
           "i have cleared Pet Rock's remembered history. your visible Telegram chat is unchanged.",
+        ),
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    const newVibe = getChangeVibe(text);
+
+    if (newVibe) {
+      if (!rock) {
+        await replyAndLog({
+          chatId,
+          text: "Adopt a rock first, then I can change its vibe.",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
+      await supabase
+        .from("rocks")
+        .update({ starting_vibe: newVibe })
+        .eq("id", rock.id);
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: rockSays(
+          rock.name,
+          `i am now ${newVibe}. this is a controlled personality event.`,
+        ),
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    const newLocation = getChangeLocation(text);
+
+    if (newLocation) {
+      if (!rock) {
+        await replyAndLog({
+          chatId,
+          text: "Adopt a rock first, then I can change its location.",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      const location = await geocodeLocation(newLocation);
+
+      if (!location) {
+        await replyAndLog({
+          chatId,
+          rockId: rock.id,
+          supabase,
+          text: rockSays(
+            rock.name,
+            "i could not find that place. try a city like New York, Austin TX, or London.",
+          ),
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      const timezone = getTimezone(location.latitude, location.longitude);
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
+      await supabase
+        .from("rocks")
+        .update({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          timezone,
+        })
+        .eq("id", rock.id);
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: rockSays(
+          rock.name,
+          `i will now watch ${formatLocation(location)}. relocation accepted with minimal rolling.`,
         ),
       });
 
