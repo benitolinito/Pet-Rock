@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const { data: rock } = await supabase
     .from("rocks")
 
-    .select("id, name, personality_state, starting_vibe")
+    .select("id, name, personality_state, starting_vibe, latitude, longitude")
 
     .eq("phone_number", from)
     .single();

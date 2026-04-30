@@ -221,7 +221,7 @@ export async function POST(request: Request) {
 
     const { data: rock } = await supabase
       .from("rocks")
-      .select("id, name, paused, personality_state, starting_vibe")
+      .select("id, name, paused, personality_state, starting_vibe, latitude, longitude")
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 

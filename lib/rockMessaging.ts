@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateRockMessage } from "@/lib/llm";
 import { createInitialPersonalityState } from "@/lib/personality";
+import { getWeather } from "@/lib/weather";
 
 export type MessageChannel = "sms" | "telegram";
 
@@ -85,6 +86,8 @@ export async function handleInboundRockMessage(args: {
     name: string;
     personality_state?: unknown;
     starting_vibe?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   body: string;
   inboundProviderSid: string | null;
@@ -117,7 +120,7 @@ export async function handleInboundRockMessage(args: {
     const generated = await generateRockMessage({
       state: normalizePersonalityState(args.rock.personality_state),
       startingVibe: args.rock.starting_vibe ?? "chill",
-      weatherSummary: "No current weather context is available yet.",
+      weatherSummary: await getWeatherSummary(args.rock),
       recentMessages: (recentMessages ?? []).reverse(),
       rockName: args.rock.name,
     });
@@ -135,6 +138,22 @@ export async function handleInboundRockMessage(args: {
     console.error("Rock reply generation failed", error);
     return fallbackReply;
   }
+}
+
+async function getWeatherSummary(rock: {
+  latitude?: number | null;
+  longitude?: number | null;
+}) {
+  if (typeof rock.latitude !== "number" || typeof rock.longitude !== "number") {
+    return "No current weather context is available yet.";
+  }
+
+  const weather = await getWeather(rock.latitude, rock.longitude);
+  const condition = weather.weather[0]?.description ?? "unknown conditions";
+  const temp = Math.round(weather.main.temp);
+  const feelsLike = Math.round(weather.main.feels_like);
+
+  return `${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`;
 }
 
 export async function generateDailyRockMessage(args: {
