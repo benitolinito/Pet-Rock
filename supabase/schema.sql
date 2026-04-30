@@ -5,7 +5,9 @@ create extension if not exists pgcrypto;
 
 create table if not exists rocks (
   id uuid primary key default gen_random_uuid(),
-  phone_number text unique not null,
+  phone_number text unique,
+  telegram_chat_id text unique,
+  telegram_user_id text,
   name text not null,
   starting_vibe text not null,
   latitude double precision not null,
@@ -18,8 +20,28 @@ create table if not exists rocks (
   opted_out_at timestamptz,
   last_daily_sent_on date,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint rocks_contact_channel_check
+    check (phone_number is not null or telegram_chat_id is not null)
 );
+
+alter table rocks
+  alter column phone_number drop not null,
+  add column if not exists telegram_chat_id text unique,
+  add column if not exists telegram_user_id text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'rocks_contact_channel_check'
+  ) then
+    alter table rocks
+      add constraint rocks_contact_channel_check
+      check (phone_number is not null or telegram_chat_id is not null);
+  end if;
+end $$;
 
 -- Messages table stores all inbound and outbound texts for each rock.
 create table if not exists messages (
