@@ -80,6 +80,10 @@ function locationPrompt(rockName: string) {
   return `what city should ${rockName} watch?`;
 }
 
+function adoptionPrompt() {
+  return "hello. i am available for adoption. what should your rock be called?";
+}
+
 // Formats a location for display
 function formatLocation(location: {
   name: string;
@@ -373,13 +377,16 @@ export async function POST(request: Request) {
 
     if (looksLikeUnadopt(text)) {
       if (!rock) {
-        await supabase
-          .from("telegram_onboarding_sessions")
-          .delete()
-          .eq("telegram_chat_id", chatId);
+        await supabase.from("telegram_onboarding_sessions").upsert({
+          telegram_chat_id: chatId,
+          telegram_user_id: telegramUserId,
+          rock_name: null,
+          starting_vibe: null,
+          updated_at: new Date().toISOString(),
+        });
         await replyAndLog({
           chatId,
-          text: "There is no adopted rock here. Send /start to adopt one.",
+          text: adoptionPrompt(),
         });
         return NextResponse.json({ ok: true });
       }
@@ -389,10 +396,17 @@ export async function POST(request: Request) {
         .delete()
         .eq("telegram_chat_id", chatId);
       await supabase.from("rocks").delete().eq("id", rock.id);
+      await supabase.from("telegram_onboarding_sessions").upsert({
+        telegram_chat_id: chatId,
+        telegram_user_id: telegramUserId,
+        rock_name: null,
+        starting_vibe: null,
+        updated_at: new Date().toISOString(),
+      });
 
       await replyAndLog({
         chatId,
-        text: "your rock has been unadopted. send /start to adopt a new one. your visible Telegram chat is unchanged.",
+        text: `your rock has been unadopted. your visible Telegram chat is unchanged.\n\n${adoptionPrompt()}`,
       });
 
       return NextResponse.json({ ok: true });
@@ -568,7 +582,7 @@ export async function POST(request: Request) {
 
         await replyAndLog({
           chatId,
-          text: "hello. i am available for adoption. what should your rock be called?",
+          text: adoptionPrompt(),
         });
         return NextResponse.json({ ok: true });
       }

@@ -1,5 +1,7 @@
 import Twilio from "twilio";
 
+
+// Get environment variable
 function getEnv(name: string) {
   const value = process.env[name];
 
@@ -10,11 +12,14 @@ function getEnv(name: string) {
   return value;
 }
 
+// Initialize the Twilio client
 const client = Twilio(
   getEnv("TWILIO_ACCOUNT_SID"),
   getEnv("TWILIO_AUTH_TOKEN"),
 );
 
+
+// Send an SMS message
 export async function sendSms(to: string, body: string) {
   return client.messages.create({
     to,

@@ -4,10 +4,12 @@ import { smsConsentDisclosure } from "@/lib/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/twilio";
 
+// Create a new pet rock
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-
+    
+    // Validate the request body
     if (
       !body.phone ||
       !body.name ||
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Normalize the phone number and get the current time
     const phoneNumber = normalizePhoneNumber(body.phone);
     const consentCheckedAt = new Date().toISOString();
 
