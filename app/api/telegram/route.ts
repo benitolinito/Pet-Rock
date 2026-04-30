@@ -10,6 +10,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { geocodeLocation, getTimezone } from "@/lib/weather";
 
+// Represents a Telegram update
 type TelegramUpdate = {
   message?: {
     message_id: number;
@@ -26,6 +27,7 @@ type TelegramUpdate = {
   };
 };
 
+// Gets the Telegram webhook secret from the environment
 function getWebhookSecret() {
   const value = process.env.TELEGRAM_WEBHOOK_SECRET;
 
@@ -36,10 +38,12 @@ function getWebhookSecret() {
   return value;
 }
 
+// Creates a unique ID for a Telegram message
 function providerSid(chatId: string, messageId: number) {
   return `telegram:${chatId}:${messageId}`;
 }
 
+// Gets the name of the rock being adopted
 function getAdoptName(text: string) {
   const [, ...parts] = text.trim().split(/\s+/);
   const name = parts.join(" ").trim();
@@ -47,6 +51,7 @@ function getAdoptName(text: string) {
   return name || null;
 }
 
+// Gets the starting vibe for the rock
 function getStartingVibe(text: string) {
   const normalized = text.trim().toLowerCase();
 
@@ -65,14 +70,17 @@ function getStartingVibe(text: string) {
   return null;
 }
 
+// Returns a prompt for the user to select a vibe
 function vibePrompt() {
   return "what vibe should your rock have?\nchill, dramatic, or crashing out";
 }
 
+// Returns a prompt for the user to enter a location
 function locationPrompt(rockName: string) {
   return `what city should ${rockName} watch?`;
 }
 
+// Formats a location for display
 function formatLocation(location: {
   name: string;
   state: string | null;
@@ -83,6 +91,8 @@ function formatLocation(location: {
     .join(", ");
 }
 
+
+// Gets the name to use for renaming a rock
 function getRenameName(text: string) {
   return text
     .trim()
@@ -91,6 +101,7 @@ function getRenameName(text: string) {
     .trim();
 }
 
+// Checks if the text looks like a request to rename a rock
 function looksLikeRename(text: string) {
   return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
 }
@@ -141,6 +152,27 @@ function looksLikeUnadopt(text: string) {
     /^start over$/i.test(text.trim()) ||
     /^unadopt$/i.test(text.trim())
   );
+}
+
+// Checks if the user wants help
+function looksLikeHelp(text: string) {
+  const normalized = text.trim().toLowerCase();
+
+  return normalized === "/help" || normalized === "help" || normalized === "commands";
+}
+
+// Returns the help text for the user
+function helpText() {
+  return [
+    "Pet Rock commands:",
+    "/start or start - resume updates",
+    "/pause or pause - pause updates",
+    "/rename Rocky or call my rock Rocky - rename your rock",
+    "/vibe dramatic, change vibe to chill, or set vibe crashing out - change personality",
+    "/location Boston, watch Austin TX, or change location to London - change weather location",
+    "/clear, /clearhistory, or clear history - clear Pet Rock's remembered history",
+    "/unadopt, /reset, reset rock, or start over - unadopt and start over",
+  ].join("\n");
 }
 
 //sends a reply and logs it
@@ -201,6 +233,30 @@ export async function POST(request: Request) {
           .eq("telegram_chat_id", chatId)
           .maybeSingle()
       : { data: null };
+
+    if (looksLikeHelp(text)) {
+      if (!rock) {
+        await replyAndLog({
+          chatId,
+          text: `${helpText()}\n\nSend /start to adopt a rock.`,
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: helpText(),
+      });
+      return NextResponse.json({ ok: true });
+    }
 
     if (looksLikeRename(text)) {
       if (!rock) {

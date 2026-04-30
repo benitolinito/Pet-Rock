@@ -82,7 +82,10 @@ const US_STATE_NAMES: Record<string, string> = {
 
 // Geocodes a location based on a query string
 export async function geocodeLocation(query: string) {
+  const usQuery = buildOpenWeatherUsQuery(query);
+
   return (
+    (usQuery ? await geocodeOpenWeather(usQuery) : null) ??
     (await geocodeOpenWeather(query)) ??
     (await geocodeOpenWeather(expandUsState(query)))
   );
@@ -119,6 +122,16 @@ async function geocodeOpenWeather(query: string) {
     country: location.country,
     state: location.state ?? null,
   };
+}
+
+function buildOpenWeatherUsQuery(query: string) {
+  const match = query.trim().match(/^(.+?)[,\s]+([A-Za-z]{2})$/);
+
+  if (!match || !US_STATE_NAMES[match[2].toUpperCase()]) {
+    return null;
+  }
+
+  return `${match[1].trim()},${match[2].toUpperCase()},US`;
 }
 
 // Expands a US state abbreviation to its full name
