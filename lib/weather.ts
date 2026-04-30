@@ -15,6 +15,7 @@ type WeatherResponse = {
   name: string;
 };
 
+// Geocodes a location based on a query string
 type GeocodingResponse = Array<{
   name: string;
   lat: number;
@@ -23,6 +24,7 @@ type GeocodingResponse = Array<{
   state?: string;
 }>;
 
+// Maps US state abbreviations to their full names
 const US_STATE_NAMES: Record<string, string> = {
   AL: "Alabama",
   AK: "Alaska",
@@ -117,6 +119,7 @@ async function geocodeOpenWeather(query: string) {
   };
 }
 
+// Expands a US state abbreviation to its full name
 function expandUsState(query: string) {
   const match = query.trim().match(/^(.+?)[,\s]+([A-Za-z]{2})$/);
 
@@ -142,6 +145,7 @@ export async function getWeather(latitude: number, longitude: number) {
     units: "imperial",
   });
 
+  // Fetch the weather data
   const response = await fetch(
     `https://api.openweathermap.org/data/2.5/weather?${params.toString()}`,
     { cache: "no-store" },
