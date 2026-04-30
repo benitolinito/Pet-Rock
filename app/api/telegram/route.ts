@@ -8,6 +8,7 @@ import {
 } from "@/lib/rockMessaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { geocodeLocation } from "@/lib/weather";
 
 type TelegramUpdate = {
   message?: {
@@ -66,6 +67,20 @@ function getStartingVibe(text: string) {
 
 function vibePrompt() {
   return "what vibe should your rock have?\nchill, dramatic, or crashing out";
+}
+
+function locationPrompt(rockName: string) {
+  return `what city should ${rockName} watch?`;
+}
+
+function formatLocation(location: {
+  name: string;
+  state: string | null;
+  country: string;
+}) {
+  return [location.name, location.state, location.country]
+    .filter(Boolean)
+    .join(", ");
 }
 
 function getRenameName(text: string) {
@@ -150,7 +165,7 @@ export async function POST(request: Request) {
     const { data: onboardingSession } = !rock
       ? await supabase
           .from("telegram_onboarding_sessions")
-          .select("rock_name")
+          .select("rock_name, starting_vibe")
           .eq("telegram_chat_id", chatId)
           .maybeSingle()
       : { data: null };
@@ -277,6 +292,7 @@ export async function POST(request: Request) {
         telegram_chat_id: chatId,
         telegram_user_id: telegramUserId,
         rock_name: name,
+        starting_vibe: null,
         updated_at: new Date().toISOString(),
       });
 
@@ -294,6 +310,7 @@ export async function POST(request: Request) {
           telegram_chat_id: chatId,
           telegram_user_id: telegramUserId,
           rock_name: null,
+          starting_vibe: null,
           updated_at: new Date().toISOString(),
         });
 
@@ -305,12 +322,38 @@ export async function POST(request: Request) {
       }
 
       if (onboardingSession?.rock_name) {
-        const startingVibe = getStartingVibe(text);
+        if (!onboardingSession.starting_vibe) {
+          const startingVibe = getStartingVibe(text);
 
-        if (!startingVibe) {
+          if (!startingVibe) {
+            await replyAndLog({
+              chatId,
+              text: vibePrompt(),
+            });
+            return NextResponse.json({ ok: true });
+          }
+
+          await supabase.from("telegram_onboarding_sessions").upsert({
+            telegram_chat_id: chatId,
+            telegram_user_id: telegramUserId,
+            rock_name: onboardingSession.rock_name,
+            starting_vibe: startingVibe,
+            updated_at: new Date().toISOString(),
+          });
+
           await replyAndLog({
             chatId,
-            text: vibePrompt(),
+            text: locationPrompt(onboardingSession.rock_name),
+          });
+          return NextResponse.json({ ok: true });
+        }
+
+        const location = await geocodeLocation(text);
+
+        if (!location) {
+          await replyAndLog({
+            chatId,
+            text: "I could not find that place. Try a city like New York, Austin TX, or London.",
           });
           return NextResponse.json({ ok: true });
         }
@@ -322,9 +365,9 @@ export async function POST(request: Request) {
             telegram_chat_id: chatId,
             telegram_user_id: telegramUserId,
             name: onboardingSession.rock_name,
-            starting_vibe: startingVibe,
-            latitude: 0,
-            longitude: 0,
+            starting_vibe: onboardingSession.starting_vibe,
+            latitude: location.latitude,
+            longitude: location.longitude,
             timezone: "UTC",
             personality_state: createInitialPersonalityState(),
             consent_checked_at: new Date().toISOString(),
@@ -348,7 +391,7 @@ export async function POST(request: Request) {
           supabase,
           text: rockSays(
             onboardingSession.rock_name,
-            `i have been adopted with a ${startingVibe} disposition. i will observe things and report back when ready.`,
+            `i have been adopted with a ${onboardingSession.starting_vibe} disposition. i will watch ${formatLocation(location)} and report back when ready.`,
           ),
         });
         return NextResponse.json({ ok: true });
@@ -368,6 +411,7 @@ export async function POST(request: Request) {
         telegram_chat_id: chatId,
         telegram_user_id: telegramUserId,
         rock_name: name,
+        starting_vibe: null,
         updated_at: new Date().toISOString(),
       });
 

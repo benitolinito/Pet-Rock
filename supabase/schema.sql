@@ -67,6 +67,10 @@ create table if not exists telegram_onboarding_sessions (
   telegram_chat_id text primary key,
   telegram_user_id text,
   rock_name text,
+  starting_vibe text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table telegram_onboarding_sessions
+  add column if not exists starting_vibe text;
