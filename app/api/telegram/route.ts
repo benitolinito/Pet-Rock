@@ -52,18 +52,31 @@ function looksLikeRename(text: string) {
   return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
 }
 
+function rockSays(rockName: string, message: string) {
+  return `${rockName}:\n${message}`;
+}
+
 function fallbackReply(rockName: string, text: string) {
   const normalized = text.trim().toLowerCase();
 
   if (normalized === "help" || normalized === "/help") {
-    return `${rockName} accepts messages here. To rename it, say "call my rock NewName". Say "pause" to pause updates.`;
+    return rockSays(
+      rockName,
+      'i accept messages here. to rename me, say "call my rock NewName". say "pause" if you require silence.',
+    );
   }
 
   if (normalized === "/pause" || normalized === "pause") {
-    return `${rockName} will be quiet for now. Say "start" when you want to resume.`;
+    return rockSays(
+      rockName,
+      'i will be quiet for now. say "start" when you want me to resume observing.',
+    );
   }
 
-  return `${rockName} heard you. it is still learning how to respond, but it has stored this moment carefully.`;
+  return rockSays(
+    rockName,
+    "i heard you. i am still learning how to respond, but i have stored this moment carefully.",
+  );
 }
 
 async function replyAndLog(args: {
@@ -153,7 +166,10 @@ export async function POST(request: Request) {
       await replyAndLog({
         chatId,
         rockId: rock.id,
-        text: `${name} has accepted the new name with geological restraint.`,
+        text: rockSays(
+          name,
+          "i have accepted the new name with geological restraint.",
+        ),
       });
 
       return NextResponse.json({ ok: true });
@@ -204,7 +220,10 @@ export async function POST(request: Request) {
       await replyAndLog({
         chatId,
         rockId: newRock.id,
-        text: `${name} has been adopted. it will observe things and report back when ready.`,
+        text: rockSays(
+          name,
+          "i have been adopted. i will observe things and report back when ready.",
+        ),
       });
 
       return NextResponse.json({ ok: true });
@@ -254,7 +273,10 @@ export async function POST(request: Request) {
       await replyAndLog({
         chatId,
         rockId: newRock.id,
-        text: `${name} has been adopted. it will observe things and report back when ready.`,
+        text: rockSays(
+          name,
+          "i have been adopted. i will observe things and report back when ready.",
+        ),
       });
       return NextResponse.json({ ok: true });
     }

@@ -28,7 +28,13 @@ create table if not exists rocks (
 alter table rocks
   alter column phone_number drop not null,
   add column if not exists telegram_chat_id text unique,
-  add column if not exists telegram_user_id text;
+  add column if not exists telegram_user_id text,
+  add column if not exists paused boolean not null default false,
+  add column if not exists consent_checked_at timestamptz,
+  add column if not exists consent_text text,
+  add column if not exists opted_out_at timestamptz,
+  add column if not exists last_daily_sent_on date,
+  add column if not exists updated_at timestamptz not null default now();
 
 do $$
 begin
