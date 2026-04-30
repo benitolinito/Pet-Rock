@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import {
   generateDailyRockMessage,
   recordOutboundRockMessage,
+  summarizeTomorrowForecast,
 } from "@/lib/rockMessaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
-import { getWeather } from "@/lib/weather";
+import { getForecast, getWeather } from "@/lib/weather";
 
 const CRON_CONCURRENCY = 3;
 
+// Check if the request is an authorized cron request
 function isAuthorizedCronRequest(request: Request) {
   const secret = process.env.CRON_SECRET;
 
@@ -65,14 +67,25 @@ function shouldSendToday(rock: DailyRock) {
 }
 
 // Summarize the weather for a given location
-function summarizeWeather(weather: Awaited<ReturnType<typeof getWeather>>) {
+function summarizeWeather(args: {
+  weather: Awaited<ReturnType<typeof getWeather>>;
+  forecast: Awaited<ReturnType<typeof getForecast>>;
+  timezone: string;
+}) {
+  const weather = args.weather;
   const condition = weather.weather[0]?.description ?? "unknown conditions";
   const temp = Math.round(weather.main.temp);
   const feelsLike = Math.round(weather.main.feels_like);
 
-  return `${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`;
+  return [
+    `Current in ${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`,
+    summarizeTomorrowForecast(args.forecast, args.timezone),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
+// Process a single rock
 async function processRock(args: {
   supabase: ReturnType<typeof createSupabaseAdminClient>;
   rock: DailyRock;
@@ -86,12 +99,19 @@ async function processRock(args: {
   }
 
   try {
-    const weather = await getWeather(rock.latitude, rock.longitude);
+    const [weather, forecast] = await Promise.all([
+      getWeather(rock.latitude, rock.longitude),
+      getForecast(rock.latitude, rock.longitude),
+    ]);
     const message = await generateDailyRockMessage({
       supabase: args.supabase,
       channel: "telegram",
       rock,
-      weatherSummary: summarizeWeather(weather),
+      weatherSummary: summarizeWeather({
+        weather,
+        forecast,
+        timezone: rock.timezone,
+      }),
     });
     const sent = await sendTelegramMessage(rock.telegram_chat_id, message);
 
@@ -156,6 +176,7 @@ export async function GET(request: Request) {
   const skipped = [];
   const dueRocks = [];
 
+  // Filter the rocks to only include those that are due for a daily message
   for (const rock of (rocks ?? []) as DailyRock[]) {
     const { due, localDate } = shouldSendToday(rock);
 
@@ -167,12 +188,13 @@ export async function GET(request: Request) {
     dueRocks.push({ rock, localDate });
   }
 
+  // Process the rocks in batches
   const processed = await processInBatches(
     dueRocks,
     CRON_CONCURRENCY,
     (item) => processRock({ supabase, ...item }),
   );
-
+  
   return NextResponse.json({
     ok: true,
     checked: rocks?.length ?? 0,

@@ -368,7 +368,7 @@ export async function POST(request: Request) {
         supabase,
         text: rockSays(
           name,
-          "i have accepted the new name with geological restraint.",
+          "i have accepted the new name with rocky restraint.",
         ),
       });
 

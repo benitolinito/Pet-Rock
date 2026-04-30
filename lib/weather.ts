@@ -17,6 +17,22 @@ type WeatherResponse = {
   name: string;
 };
 
+type ForecastResponse = {
+  city: { name: string };
+  list: Array<{
+    dt: number;
+    dt_txt: string;
+    weather: Array<{ main: string; description: string }>;
+    main: {
+      temp: number;
+      feels_like: number;
+      temp_min: number;
+      temp_max: number;
+    };
+    pop?: number;
+  }>;
+};
+
 // Geocodes a location based on a query string
 type GeocodingResponse = Array<{
   name: string;
@@ -171,6 +187,26 @@ export async function getWeather(latitude: number, longitude: number) {
   }
 
   return (await response.json()) as WeatherResponse;
+}
+
+export async function getForecast(latitude: number, longitude: number) {
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+    appid: getEnv("OPENWEATHER_API_KEY"),
+    units: "imperial",
+  });
+
+  const response = await fetch(
+    `https://api.openweathermap.org/data/2.5/forecast?${params.toString()}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch forecast.");
+  }
+
+  return (await response.json()) as ForecastResponse;
 }
 
 export function getTimezone(latitude: number, longitude: number) {

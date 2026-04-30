@@ -47,6 +47,7 @@ export async function generateRockMessage(_args: {
           "Do not mention that you are an AI or language model.",
           "Do not include the rock name as a speaker label.",
           "Keep replies under 320 characters.",
+          "If the user asks about future weather, answer from the forecast context when available.",
           "Do not list commands or instructions during casual conversation.",
           "Only if the latest user message explicitly asks for help, commands, or what they can do, briefly explain they can say pause, start, rename, or clear history.",
         ].join(" "),
