@@ -1,4 +1,9 @@
 import { normalizePhoneNumber } from "@/lib/phone";
+import {
+  handleInboundRockMessage,
+  recordInboundRockMessage,
+  recordOutboundRockMessage,
+} from "@/lib/rockMessaging";
 import { siteConfig } from "@/lib/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -52,19 +57,20 @@ export async function POST(request: Request) {
     );
   }
 
-  if (body) {
-    await supabase.from("messages").upsert(
-      {
-        rock_id: rock.id,
-        direction: "inbound",
-        body,
-        provider_sid: messageSid,
-      },
-      {
-        onConflict: "provider_sid",
-        ignoreDuplicates: true,
-      },
-    );
+  if (
+    body &&
+    (STOP_KEYWORDS.has(normalizedBody) ||
+      normalizedBody === "START" ||
+      normalizedBody === "UNSTOP" ||
+      normalizedBody === "HELP" ||
+      normalizedBody === "INFO")
+  ) {
+    await recordInboundRockMessage({
+      supabase,
+      rockId: rock.id,
+      body,
+      providerSid: messageSid,
+    });
   }
 
   if (STOP_KEYWORDS.has(normalizedBody)) {
@@ -95,7 +101,20 @@ export async function POST(request: Request) {
     );
   }
 
-  return xml(
-    `${rock.name} heard you. Two-way chat is still limited right now. Reply HELP for help or STOP to cancel.`,
-  );
+  const reply = await handleInboundRockMessage({
+    supabase,
+    channel: "sms",
+    rock,
+    body,
+    inboundProviderSid: messageSid,
+  });
+
+  await recordOutboundRockMessage({
+    supabase,
+    rockId: rock.id,
+    body: reply,
+    providerSid: null,
+  });
+
+  return xml(reply);
 }

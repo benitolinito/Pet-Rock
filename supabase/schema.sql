@@ -62,3 +62,11 @@ create table if not exists messages (
 -- Fetch recent messages for a specific rock efficiently.
 create index if not exists messages_rock_id_created_at_idx
   on messages(rock_id, created_at desc);
+
+create table if not exists telegram_onboarding_sessions (
+  telegram_chat_id text primary key,
+  telegram_user_id text,
+  rock_name text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);

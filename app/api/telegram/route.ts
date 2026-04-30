@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { createInitialPersonalityState } from "@/lib/personality";
+import {
+  handleInboundRockMessage,
+  recordInboundRockMessage,
+  recordOutboundRockMessage,
+  rockSays,
+} from "@/lib/rockMessaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
 
@@ -40,6 +46,28 @@ function getAdoptName(text: string) {
   return name || null;
 }
 
+function getStartingVibe(text: string) {
+  const normalized = text.trim().toLowerCase();
+
+  if (normalized === "chill") {
+    return "chill";
+  }
+
+  if (normalized === "dramatic") {
+    return "dramatic";
+  }
+
+  if (normalized === "crashing" || normalized === "crashing out") {
+    return "crashing out";
+  }
+
+  return null;
+}
+
+function vibePrompt() {
+  return "what vibe should your rock have?\nchill, dramatic, or crashing out";
+}
+
 function getRenameName(text: string) {
   return text
     .trim()
@@ -52,36 +80,10 @@ function looksLikeRename(text: string) {
   return /^\/?rename\s+/i.test(text) || /^call (?:me|it|my rock)\s+/i.test(text);
 }
 
-function rockSays(rockName: string, message: string) {
-  return `${rockName}:\n${message}`;
-}
-
-function fallbackReply(rockName: string, text: string) {
-  const normalized = text.trim().toLowerCase();
-
-  if (normalized === "help" || normalized === "/help") {
-    return rockSays(
-      rockName,
-      'i accept messages here. to rename me, say "call my rock NewName". say "pause" if you require silence.',
-    );
-  }
-
-  if (normalized === "/pause" || normalized === "pause") {
-    return rockSays(
-      rockName,
-      'i will be quiet for now. say "start" when you want me to resume observing.',
-    );
-  }
-
-  return rockSays(
-    rockName,
-    "i heard you. i am still learning how to respond, but i have stored this moment carefully.",
-  );
-}
-
 async function replyAndLog(args: {
   chatId: string;
   rockId?: string;
+  supabase?: ReturnType<typeof createSupabaseAdminClient>;
   text: string;
 }) {
   const sent = await sendTelegramMessage(args.chatId, args.text);
@@ -90,12 +92,11 @@ async function replyAndLog(args: {
     return;
   }
 
-  const supabase = createSupabaseAdminClient();
-  await supabase.from("messages").insert({
-    rock_id: args.rockId,
-    direction: "outbound",
+  await recordOutboundRockMessage({
+    supabase: args.supabase ?? createSupabaseAdminClient(),
+    rockId: args.rockId,
     body: args.text,
-    provider_sid: sent?.message_id
+    providerSid: sent?.message_id
       ? providerSid(args.chatId, sent.message_id)
       : null,
   });
@@ -127,20 +128,13 @@ export async function POST(request: Request) {
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 
-    if (rock) {
-      await supabase.from("messages").upsert(
-        {
-          rock_id: rock.id,
-          direction: "inbound",
-          body: text,
-          provider_sid: providerSid(chatId, message.message_id),
-        },
-        {
-          onConflict: "provider_sid",
-          ignoreDuplicates: true,
-        },
-      );
-    }
+    const { data: onboardingSession } = !rock
+      ? await supabase
+          .from("telegram_onboarding_sessions")
+          .select("rock_name")
+          .eq("telegram_chat_id", chatId)
+          .maybeSingle()
+      : { data: null };
 
     if (looksLikeRename(text)) {
       if (!rock) {
@@ -150,6 +144,13 @@ export async function POST(request: Request) {
         });
         return NextResponse.json({ ok: true });
       }
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
 
       const name = getRenameName(text);
 
@@ -166,6 +167,7 @@ export async function POST(request: Request) {
       await replyAndLog({
         chatId,
         rockId: rock.id,
+        supabase,
         text: rockSays(
           name,
           "i have accepted the new name with geological restraint.",
@@ -180,6 +182,7 @@ export async function POST(request: Request) {
         await replyAndLog({
           chatId,
           rockId: rock.id,
+          supabase,
           text: `You already adopted ${rock.name}. To rename it, say "call my rock NewName".`,
         });
         return NextResponse.json({ ok: true });
@@ -195,35 +198,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      const { data: newRock, error } = await supabase
-        .from("rocks")
-        .insert({
-          phone_number: null,
-          telegram_chat_id: chatId,
-          telegram_user_id: telegramUserId,
-          name,
-          starting_vibe: "telegram",
-          latitude: 0,
-          longitude: 0,
-          timezone: "UTC",
-          personality_state: createInitialPersonalityState(),
-          consent_checked_at: new Date().toISOString(),
-          consent_text: "Telegram user started the bot and adopted a rock.",
-        })
-        .select("id")
-        .single();
-
-      if (error || !newRock) {
-        throw new Error(error?.message ?? "Failed to create Telegram rock.");
-      }
+      await supabase.from("telegram_onboarding_sessions").upsert({
+        telegram_chat_id: chatId,
+        telegram_user_id: telegramUserId,
+        rock_name: name,
+        updated_at: new Date().toISOString(),
+      });
 
       await replyAndLog({
         chatId,
-        rockId: newRock.id,
-        text: rockSays(
-          name,
-          "i have been adopted. i will observe things and report back when ready.",
-        ),
+        text: vibePrompt(),
       });
 
       return NextResponse.json({ ok: true });
@@ -231,9 +215,66 @@ export async function POST(request: Request) {
 
     if (!rock) {
       if (text === "/start" || text.toLowerCase() === "start") {
+        await supabase.from("telegram_onboarding_sessions").upsert({
+          telegram_chat_id: chatId,
+          telegram_user_id: telegramUserId,
+          rock_name: null,
+          updated_at: new Date().toISOString(),
+        });
+
         await replyAndLog({
           chatId,
           text: "hello. i am available for adoption. what should your rock be called?",
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      if (onboardingSession?.rock_name) {
+        const startingVibe = getStartingVibe(text);
+
+        if (!startingVibe) {
+          await replyAndLog({
+            chatId,
+            text: vibePrompt(),
+          });
+          return NextResponse.json({ ok: true });
+        }
+
+        const { data: newRock, error } = await supabase
+          .from("rocks")
+          .insert({
+            phone_number: null,
+            telegram_chat_id: chatId,
+            telegram_user_id: telegramUserId,
+            name: onboardingSession.rock_name,
+            starting_vibe: startingVibe,
+            latitude: 0,
+            longitude: 0,
+            timezone: "UTC",
+            personality_state: createInitialPersonalityState(),
+            consent_checked_at: new Date().toISOString(),
+            consent_text: "Telegram user started the bot and adopted a rock.",
+          })
+          .select("id")
+          .single();
+
+        if (error || !newRock) {
+          throw new Error(error?.message ?? "Failed to create Telegram rock.");
+        }
+
+        await supabase
+          .from("telegram_onboarding_sessions")
+          .delete()
+          .eq("telegram_chat_id", chatId);
+
+        await replyAndLog({
+          chatId,
+          rockId: newRock.id,
+          supabase,
+          text: rockSays(
+            onboardingSession.rock_name,
+            `i have been adopted with a ${startingVibe} disposition. i will observe things and report back when ready.`,
+          ),
         });
         return NextResponse.json({ ok: true });
       }
@@ -248,35 +289,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      const { data: newRock, error } = await supabase
-        .from("rocks")
-        .insert({
-          phone_number: null,
-          telegram_chat_id: chatId,
-          telegram_user_id: telegramUserId,
-          name,
-          starting_vibe: "telegram",
-          latitude: 0,
-          longitude: 0,
-          timezone: "UTC",
-          personality_state: createInitialPersonalityState(),
-          consent_checked_at: new Date().toISOString(),
-          consent_text: "Telegram user started the bot and adopted a rock.",
-        })
-        .select("id")
-        .single();
-
-      if (error || !newRock) {
-        throw new Error(error?.message ?? "Failed to create Telegram rock.");
-      }
+      await supabase.from("telegram_onboarding_sessions").upsert({
+        telegram_chat_id: chatId,
+        telegram_user_id: telegramUserId,
+        rock_name: name,
+        updated_at: new Date().toISOString(),
+      });
 
       await replyAndLog({
         chatId,
-        rockId: newRock.id,
-        text: rockSays(
-          name,
-          "i have been adopted. i will observe things and report back when ready.",
-        ),
+        text: vibePrompt(),
       });
       return NextResponse.json({ ok: true });
     }
@@ -295,10 +317,19 @@ export async function POST(request: Request) {
         .eq("id", rock.id);
     }
 
+    const reply = await handleInboundRockMessage({
+      supabase,
+      channel: "telegram",
+      rock,
+      body: text,
+      inboundProviderSid: providerSid(chatId, message.message_id),
+    });
+
     await replyAndLog({
       chatId,
       rockId: rock.id,
-      text: fallbackReply(rock.name, text),
+      supabase,
+      text: reply,
     });
 
     return NextResponse.json({ ok: true });
