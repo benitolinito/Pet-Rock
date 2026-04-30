@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { getWeather } from "@/lib/weather";
 
+const CRON_CONCURRENCY = 3;
 
 // Define the structure of a daily rock
 type DailyRock = {
@@ -62,8 +63,68 @@ function summarizeWeather(weather: Awaited<ReturnType<typeof getWeather>>) {
   return `${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`;
 }
 
+async function processRock(args: {
+  supabase: ReturnType<typeof createSupabaseAdminClient>;
+  rock: DailyRock;
+  localDate: string;
+}) {
+  const startedAt = Date.now();
+  const rock = args.rock;
+
+  if (!rock.telegram_chat_id) {
+    return { id: rock.id, status: "skipped", elapsedMs: 0 };
+  }
+
+  try {
+    const weather = await getWeather(rock.latitude, rock.longitude);
+    const message = await generateDailyRockMessage({
+      supabase: args.supabase,
+      channel: "telegram",
+      rock,
+      weatherSummary: summarizeWeather(weather),
+    });
+    const sent = await sendTelegramMessage(rock.telegram_chat_id, message);
+
+    await recordOutboundRockMessage({
+      supabase: args.supabase,
+      rockId: rock.id,
+      body: message,
+      providerSid: sent?.message_id
+        ? `telegram:${rock.telegram_chat_id}:${sent.message_id}`
+        : null,
+    });
+
+    await args.supabase
+      .from("rocks")
+      .update({ last_daily_sent_on: args.localDate })
+      .eq("id", rock.id);
+
+    return { id: rock.id, status: "sent", elapsedMs: Date.now() - startedAt };
+  } catch (error) {
+    console.error("Daily cron failed for rock", rock.id, error);
+    return { id: rock.id, status: "failed", elapsedMs: Date.now() - startedAt };
+  }
+}
+
+async function processInBatches<T, R>(
+  items: T[],
+  batchSize: number,
+  fn: (item: T) => Promise<R>,
+) {
+  const results: R[] = [];
+
+  for (let index = 0; index < items.length; index += batchSize) {
+    results.push(
+      ...(await Promise.all(items.slice(index, index + batchSize).map(fn))),
+    );
+  }
+
+  return results;
+}
+
 // Main function to handle the daily cron job
 export async function GET() {
+  const startedAt = Date.now();
   const supabase = createSupabaseAdminClient();
 
   const { data: rocks, error } = await supabase
@@ -78,50 +139,31 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const results = [];
+  const skipped = [];
+  const dueRocks = [];
 
   for (const rock of (rocks ?? []) as DailyRock[]) {
     const { due, localDate } = shouldSendToday(rock);
 
     if (!due || !rock.telegram_chat_id) {
-      results.push({ id: rock.id, status: "skipped" });
+      skipped.push({ id: rock.id, status: "skipped" });
       continue;
     }
 
-    try {
-      const weather = await getWeather(rock.latitude, rock.longitude);
-      const message = await generateDailyRockMessage({
-        supabase,
-        channel: "telegram",
-        rock,
-        weatherSummary: summarizeWeather(weather),
-      });
-      const sent = await sendTelegramMessage(rock.telegram_chat_id, message);
-
-      await recordOutboundRockMessage({
-        supabase,
-        rockId: rock.id,
-        body: message,
-        providerSid: sent?.message_id
-          ? `telegram:${rock.telegram_chat_id}:${sent.message_id}`
-          : null,
-      });
-
-      await supabase
-        .from("rocks")
-        .update({ last_daily_sent_on: localDate })
-        .eq("id", rock.id);
-
-      results.push({ id: rock.id, status: "sent" });
-    } catch (error) {
-      console.error("Daily cron failed for rock", rock.id, error);
-      results.push({ id: rock.id, status: "failed" });
-    }
+    dueRocks.push({ rock, localDate });
   }
+
+  const processed = await processInBatches(
+    dueRocks,
+    CRON_CONCURRENCY,
+    (item) => processRock({ supabase, ...item }),
+  );
 
   return NextResponse.json({
     ok: true,
     checked: rocks?.length ?? 0,
-    results,
+    due: dueRocks.length,
+    elapsedMs: Date.now() - startedAt,
+    results: [...skipped, ...processed],
   });
 }
