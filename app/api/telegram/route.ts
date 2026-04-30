@@ -76,8 +76,8 @@ function vibePrompt() {
 }
 
 // Returns a prompt for the user to enter a location
-function locationPrompt(rockName: string) {
-  return `what city should ${rockName} watch?`;
+function locationPrompt() {
+  return "what city should i use for your weather?";
 }
 
 function adoptionPrompt() {
@@ -154,6 +154,30 @@ function getChangeLocation(text: string) {
   }
 
   return match[1].trim() || null;
+}
+
+// Recognizes natural corrections without treating every city mention as a setting change.
+function getImplicitLocationChange(text: string) {
+  const trimmed = text.trim();
+  const patterns = [
+    /^(?:no[,.]?\s*)?(?:i'?m|i am|we'?re|we are)\s+(?:in|near|at)\s+(.+)$/i,
+    /^(?:no[,.]?\s*)?(?:my location is|the location is|location is)\s+(.+)$/i,
+    /^(?:no[,.]?\s*)?i mean\s+(.+)$/i,
+    /^(?:no[,.]?\s*)?(?:use|try|set it to|make it|switch to)\s+(.+)$/i,
+    /^(?:no[,.]?\s*)?actually[,.]?\s+(.+)$/i,
+    /^no[,.]?\s+(.+)$/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern);
+    const location = match?.[1]?.trim();
+
+    if (location && !location.startsWith("/") && location.length <= 80) {
+      return location.replace(/[.!?]+$/g, "").trim() || null;
+    }
+  }
+
+  return null;
 }
 
 //checks if the user wants to clear the chat history
@@ -526,11 +550,50 @@ export async function POST(request: Request) {
         supabase,
         text: rockSays(
           rock.name,
-          `i will now watch ${formatLocation(location)}. relocation accepted with minimal rolling.`,
+          `i will use ${formatLocation(location)} for your weather now. relocation accepted with minimal rolling.`,
         ),
       });
 
       return NextResponse.json({ ok: true });
+    }
+
+    const implicitLocation = rock ? getImplicitLocationChange(text) : null;
+
+    if (rock && implicitLocation) {
+      const location = await geocodeLocation(implicitLocation);
+
+      if (location) {
+        const timezone = getTimezone(location.latitude, location.longitude);
+
+        await recordInboundRockMessage({
+          supabase,
+          rockId: rock.id,
+          body: text,
+          providerSid: providerSid(chatId, message.message_id),
+        });
+        await supabase
+          .from("rocks")
+          .update({
+            location_name: location.name,
+            location_region: location.state,
+            location_country: location.country,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            timezone,
+          })
+          .eq("id", rock.id);
+        await replyAndLog({
+          chatId,
+          rockId: rock.id,
+          supabase,
+          text: rockSays(
+            rock.name,
+            `understood. i will use ${formatLocation(location)} for your weather now. my sense of place has been revised.`,
+          ),
+        });
+
+        return NextResponse.json({ ok: true });
+      }
     }
 
     if (text.startsWith("/adopt ")) {
@@ -609,7 +672,7 @@ export async function POST(request: Request) {
 
           await replyAndLog({
             chatId,
-            text: locationPrompt(onboardingSession.rock_name),
+            text: locationPrompt(),
           });
           return NextResponse.json({ ok: true });
         }
@@ -662,7 +725,7 @@ export async function POST(request: Request) {
           supabase,
           text: rockSays(
             onboardingSession.rock_name,
-            `i have been adopted with a ${onboardingSession.starting_vibe} disposition. i will watch ${formatLocation(location)} and report back when ready.`,
+            `i have been adopted with a ${onboardingSession.starting_vibe} disposition. i will use ${formatLocation(location)} for your weather and report back when ready.`,
           ),
         });
         return NextResponse.json({ ok: true });
