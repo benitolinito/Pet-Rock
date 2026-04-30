@@ -91,6 +91,24 @@ function formatLocation(location: {
     .join(", ");
 }
 
+function formatStoredLocation(rock: {
+  location_name: string | null;
+  location_region: string | null;
+  location_country: string | null;
+  latitude: number;
+  longitude: number;
+}) {
+  const location = [
+    rock.location_name,
+    rock.location_region,
+    rock.location_country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return location || `${rock.latitude.toFixed(4)}, ${rock.longitude.toFixed(4)}`;
+}
+
 
 // Gets the name to use for renaming a rock
 function getRenameName(text: string) {
@@ -170,6 +188,9 @@ function looksLikeSettings(text: string) {
 function formatSettings(rock: {
   name: string;
   starting_vibe: string;
+  location_name: string | null;
+  location_region: string | null;
+  location_country: string | null;
   latitude: number;
   longitude: number;
   timezone: string;
@@ -180,7 +201,7 @@ function formatSettings(rock: {
     "Rock settings:",
     `name: ${rock.name}`,
     `vibe: ${rock.starting_vibe}`,
-    `coordinates: ${rock.latitude.toFixed(4)}, ${rock.longitude.toFixed(4)}`,
+    `location: ${formatStoredLocation(rock)}`,
     `timezone: ${rock.timezone}`,
     `updates: ${rock.paused ? "paused" : "active"}`,
     `last daily message: ${rock.last_daily_sent_on ?? "not sent yet"}`,
@@ -248,7 +269,7 @@ export async function POST(request: Request) {
 
     const { data: rock } = await supabase
       .from("rocks")
-      .select("id, name, paused, personality_state, starting_vibe, latitude, longitude, timezone, last_daily_sent_on")
+      .select("id, name, paused, personality_state, starting_vibe, location_name, location_region, location_country, latitude, longitude, timezone, last_daily_sent_on")
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 
@@ -477,6 +498,9 @@ export async function POST(request: Request) {
       await supabase
         .from("rocks")
         .update({
+          location_name: location.name,
+          location_region: location.state,
+          location_country: location.country,
           latitude: location.latitude,
           longitude: location.longitude,
           timezone,
@@ -596,6 +620,9 @@ export async function POST(request: Request) {
             telegram_user_id: telegramUserId,
             name: onboardingSession.rock_name,
             starting_vibe: onboardingSession.starting_vibe,
+            location_name: location.name,
+            location_region: location.state,
+            location_country: location.country,
             latitude: location.latitude,
             longitude: location.longitude,
             timezone,
