@@ -845,20 +845,51 @@ export async function POST(request: Request) {
     }
 
     if (text === "/start" || text.toLowerCase() === "start") {
+      const nextCheckIn = nextCheckInDate();
+
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
       await supabase
         .from("rocks")
         .update({
           paused: false,
-          next_check_in_at: nextCheckInDate().toISOString(),
+          next_check_in_at: nextCheckIn.toISOString(),
         })
         .eq("id", rock.id);
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: rockSays(
+          rock.name,
+          "i am observing again. next check-in is scheduled.",
+        ),
+      });
+      return NextResponse.json({ ok: true });
     }
 
     if (text === "/pause" || text.toLowerCase() === "pause") {
+      await recordInboundRockMessage({
+        supabase,
+        rockId: rock.id,
+        body: text,
+        providerSid: providerSid(chatId, message.message_id),
+      });
       await supabase
         .from("rocks")
         .update({ paused: true })
         .eq("id", rock.id);
+      await replyAndLog({
+        chatId,
+        rockId: rock.id,
+        supabase,
+        text: rockSays(rock.name, "i will be quiet for now."),
+      });
+      return NextResponse.json({ ok: true });
     }
 
     const reply = await handleInboundRockMessage({
