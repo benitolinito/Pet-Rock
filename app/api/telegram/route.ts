@@ -772,7 +772,6 @@ export async function POST(request: Request) {
         const { data: newRock, error } = await supabase
           .from("rocks")
           .insert({
-            phone_number: null,
             telegram_chat_id: chatId,
             telegram_user_id: telegramUserId,
             name: onboardingSession.rock_name,
@@ -784,8 +783,6 @@ export async function POST(request: Request) {
             longitude: location.longitude,
             timezone,
             personality_state: createInitialPersonalityState(),
-            consent_checked_at: new Date().toISOString(),
-            consent_text: "Telegram user started the bot and adopted a rock.",
           })
           .select("id")
           .single();
@@ -839,14 +836,14 @@ export async function POST(request: Request) {
     if (text === "/start" || text.toLowerCase() === "start") {
       await supabase
         .from("rocks")
-        .update({ paused: false, opted_out_at: null })
+        .update({ paused: false })
         .eq("id", rock.id);
     }
 
     if (text === "/pause" || text.toLowerCase() === "pause") {
       await supabase
         .from("rocks")
-        .update({ paused: true, opted_out_at: new Date().toISOString() })
+        .update({ paused: true })
         .eq("id", rock.id);
     }
 
