@@ -1,62 +1,30 @@
 # Pet Rock
 
-An SMS pet rock that texts you about the weather, remembers your conversations, and slowly develops a personality over time.
+A Telegram pet rock that chats about the weather, remembers conversations, and
+slowly develops a personality over time.
 
 ## Status
 
-This repo is in early setup. The Next.js app is scaffolded, but the SMS flow, database schema, auth, and dashboard are still being built.
+The app currently focuses on Telegram bot adoption, weather-aware chat, daily
+cron messages, and Supabase-backed message history.
 
-## Planned Product
+## Product
 
-- SMS-first interaction through Twilio
-- Daily weather-aware texts from your rock
-- Replies that react in character and update long-term personality state
-- Small web dashboard to view mood, quirks, and recent messages
+- Telegram-first interaction
+- Weather-aware replies using OpenWeather
+- Forecast-aware answers for tomorrow and upcoming weather
+- Daily proactive Telegram updates
+- Saved rock settings, location, vibe, and message history
 
 ## Stack
 
 - Next.js App Router
 - Vercel
 - Supabase Postgres
-- Twilio
+- Telegram Bot API
 - OpenWeatherMap
 - OpenWebUI API for LLM calls
 - Tailwind CSS
-
-## Project Structure
-
-```txt
-Pet-Rock/
-├── app/
-├── public/
-├── package.json
-├── tsconfig.json
-└── .env.local
-```
-
-Planned additions:
-
-```txt
-Pet-Rock/
-├── app/
-│   ├── success/page.tsx
-│   ├── login/page.tsx
-│   ├── my-rock/page.tsx
-│   └── api/
-│       ├── rocks/route.ts
-│       ├── sms/route.ts
-│       └── cron/daily/route.ts
-├── lib/
-│   ├── llm.ts
-│   ├── twilio.ts
-│   ├── weather.ts
-│   ├── phone.ts
-│   └── supabase/
-│       ├── client.ts
-│       └── admin.ts
-└── supabase/
-    └── schema.sql
-```
 
 ## Local Development
 
@@ -82,25 +50,21 @@ Create `.env.local` with values for:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
 OPENWEATHER_API_KEY=
 OPENWEBUI_BASE_URL=
 OPENWEBUI_API_KEY=
 OPENWEBUI_MODEL=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
 CRON_SECRET=
+NEXT_PUBLIC_SITE_URL=
+NEXT_PUBLIC_TELEGRAM_BOT_URL=
 ```
-
-## Near-Term Build Plan
-
-1. Build signup and send the first welcome SMS.
-2. Handle inbound SMS replies and persist message history.
-3. Add personality state updates and weather-aware daily texts.
-4. Add the minimal dashboard after the SMS loop is stable.
 
 ## Notes
 
-- Phone numbers should be normalized to E.164.
-- Twilio webhooks should be validated and deduplicated.
-- The personality system should fail safely if structured LLM output is malformed.
+- Telegram webhook requests are authenticated with
+  `TELEGRAM_WEBHOOK_SECRET`.
+- Weather location is stored per rock as a city/geocoded coordinate pair.
+- Daily cron uses current weather plus tomorrow forecast.
+- Inbound chat fetches forecast only when the user asks about future weather.

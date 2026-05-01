@@ -15,11 +15,11 @@ export default function PrivacyPage() {
           <h1 className="text-3xl font-semibold tracking-tight">
             Pet Rock Privacy Policy
           </h1>
-          <p className="text-sm text-zinc-500">Last updated: April 27, 2026</p>
+          <p className="text-sm text-zinc-500">Last updated: May 1, 2026</p>
           <p className="text-sm leading-7 text-zinc-700">
             This Privacy Policy explains how {siteConfig.legalName} collects,
             uses, and protects information submitted through the Pet Rock
-            website and SMS program.
+            website and Telegram bot.
           </p>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Operator contact</h2>
@@ -33,44 +33,41 @@ export default function PrivacyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Information we collect</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              We collect the mobile number, rock name, timezone, message
-              history, consent timestamp, and service metadata needed to deliver
-              the Pet Rock SMS experience and maintain account records.
+              We collect Telegram identifiers, rock name, selected weather
+              city, timezone, message history, and service metadata needed to
+              deliver the Pet Rock experience and maintain account records.
             </p>
           </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">How we use information</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              We use this information to send requested text messages, manage
-              subscriptions, provide customer support, prevent abuse, and
-              operate the service. We may also use limited technical logs to
-              diagnose delivery issues and respond to support requests.
+              We use this information to operate the Telegram bot, remember
+              your rock, answer messages, provide weather-aware context,
+              prevent abuse, and respond to support requests.
             </p>
           </section>
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold">SMS consent</h2>
+            <h2 className="text-lg font-semibold">Telegram messages</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              SMS consent is collected through the signup form on this website.
-              Consent records are stored to document enrollment in the messaging
-              program. Consent is not a condition of purchase. You can opt out
-              at any time by replying STOP.
+              You start the bot through Telegram and can pause or reset your
+              rock using bot commands. Telegram may process your messages under
+              its own terms and privacy policy.
             </p>
           </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Sharing</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              We do not sell personal information. We do not share mobile
-              opt-in data or SMS consent with third parties for marketing
-              purposes. We may use service providers that support hosting,
-              messaging delivery, and data storage solely to operate the
-              service.
+              We do not sell personal information. We may use service providers
+              for hosting, messaging platform integration, weather data, LLM
+              responses, and data storage solely to operate the service.
             </p>
           </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Your choices</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              Reply STOP to unsubscribe from text messages. Reply HELP for help.
-              For privacy questions, contact {siteConfig.supportEmail}.
+              Use /pause, /clear, or /unadopt in Telegram to control your rock
+              and stored history. For privacy questions, contact{" "}
+              {siteConfig.supportEmail}.
             </p>
           </section>
         </div>

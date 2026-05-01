@@ -3,7 +3,7 @@ import { generateRockMessage } from "@/lib/llm";
 import { createInitialPersonalityState } from "@/lib/personality";
 import { getForecast, getWeather } from "@/lib/weather";
 
-export type MessageChannel = "sms" | "telegram";
+export type MessageChannel = "telegram";
 
 export function rockSays(rockName: string, message: string) {
   return `${rockName}:\n${message}`;
@@ -15,10 +15,6 @@ export function buildRockReply(args: {
   text: string;
 }) {
   const normalized = args.text.trim().toLowerCase();
-
-  if (args.channel === "sms") {
-    return `${args.rockName} heard you. Two-way chat is still limited right now. Reply HELP for help or STOP to cancel.`;
-  }
 
   if (normalized === "help" || normalized === "/help") {
     return rockSays(
@@ -131,11 +127,7 @@ export async function handleInboundRockMessage(args: {
       return fallbackReply;
     }
 
-    if (args.channel === "telegram") {
-      return rockSays(args.rock.name, generated);
-    }
-
-    return generated;
+    return rockSays(args.rock.name, generated);
   } catch (error) {
     console.error("Rock reply generation failed", error);
     return fallbackReply;
@@ -310,12 +302,10 @@ export async function generateDailyRockMessage(args: {
   };
   weatherSummary: string;
 }) {
-  const fallback = args.channel === "telegram"
-    ? rockSays(
-        args.rock.name,
-        "i have observed the weather. this is my work and my burden.",
-      )
-    : `${args.rock.name} observed the weather. This is its work and its burden.`;
+  const fallback = rockSays(
+    args.rock.name,
+    "i have observed the weather. this is my work and my burden.",
+  );
 
   try {
     const { data: recentMessages, error } = await args.supabase
@@ -347,11 +337,7 @@ export async function generateDailyRockMessage(args: {
       return fallback;
     }
 
-    if (args.channel === "telegram") {
-      return rockSays(args.rock.name, generated);
-    }
-
-    return generated;
+    return rockSays(args.rock.name, generated);
   } catch (error) {
     console.error("Daily rock message generation failed", error);
     return fallback;

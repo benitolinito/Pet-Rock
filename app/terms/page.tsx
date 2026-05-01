@@ -13,12 +13,12 @@ export default function TermsPage() {
             ← back
           </Link>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Pet Rock Terms and SMS Program Terms
+            Pet Rock Terms
           </h1>
-          <p className="text-sm text-zinc-500">Last updated: April 27, 2026</p>
+          <p className="text-sm text-zinc-500">Last updated: May 1, 2026</p>
           <p className="text-sm leading-7 text-zinc-700">
-            These Terms govern your use of the Pet Rock website and SMS
-            program operated by {siteConfig.legalName}.
+            These Terms govern your use of the Pet Rock website and Telegram
+            bot operated by {siteConfig.legalName}.
           </p>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Project identity</h2>
@@ -32,41 +32,39 @@ export default function TermsPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Program description</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              Pet Rock is an SMS-first companion service. By enrolling, you
-              agree to receive recurring conversational and service-related text
-              messages, including onboarding messages, replies, and periodic
-              weather-themed updates. Enrollment occurs through the signup form
-              on this website.
+              Pet Rock is a Telegram companion bot. You can adopt a virtual pet
+              rock, chat with it, set a weather city, and receive Telegram
+              messages from your rock.
             </p>
           </section>
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold">Message frequency and fees</h2>
+            <h2 className="text-lg font-semibold">Messages and availability</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              Message frequency varies based on your activity and the program
-              design. Message and data rates may apply according to your mobile
-              carrier plan.
+              Message frequency may vary based on your activity and product
+              behavior. The service may change, pause, or become unavailable
+              while the project is under development.
             </p>
           </section>
           <section className="space-y-2">
-            <h2 className="text-lg font-semibold">Opt-out and help</h2>
+            <h2 className="text-lg font-semibold">Controls and help</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              Reply STOP to cancel. Reply START to resubscribe after opting out.
-              Reply HELP for help. Carriers are not liable for delayed or
-              undelivered messages.
+              Use Telegram commands such as /pause, /start, /settings,
+              /clear, and /unadopt to control your rock. Contact{" "}
+              {siteConfig.supportEmail} for support.
             </p>
           </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Eligibility and use</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              You must provide a valid mobile number you are authorized to use.
-              You agree not to use the service for abuse, fraud, or unlawful
-              activity.
+              You agree not to use the service for abuse, fraud, unlawful
+              activity, or attempts to disrupt the bot or its underlying
+              services.
             </p>
           </section>
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Support</h2>
             <p className="text-sm leading-7 text-zinc-700">
-              For account or SMS support, contact {siteConfig.supportEmail}.
+              For account or bot support, contact {siteConfig.supportEmail}.
             </p>
           </section>
         </div>
