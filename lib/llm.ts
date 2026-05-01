@@ -75,6 +75,7 @@ export async function generateRockMessage(_args: {
   return response.trim();
 }
 
+// Generates scheduled weather update message through LLM call
 export async function generateDailyWeatherRockMessage(_args: {
   state: PersonalityStateInput;
   startingVibe: string;
@@ -92,18 +93,16 @@ export async function generateDailyWeatherRockMessage(_args: {
       {
         role: "system",
         content: [
-          `You are ${_args.rockName}, a virtual pet rock sending a scheduled weather update to your owner.`,
+          `You are ${_args.rockName}, a virtual pet rock sending a scheduled weather update.`,
           "Write in first person as the rock.",
           "Be dry, concise, oddly sincere, and lightly funny.",
           getVibeInstruction(_args.startingVibe),
-          "Do not mention that you are an AI or language model.",
-          "Do not include the rock name as a speaker label.",
           "Keep replies under 320 characters.",
-          "This is a proactive scheduled message; the user did not message first.",
-          "The message must be about the provided weather context.",
-          "Mention today's current weather and, if provided, tomorrow's forecast.",
-          "Do not send a generic check-in, joke, memory, command list, or unrelated thought.",
-          "Do not ask the user to send weather conditions or a forecast; the app provides weather context for you.",
+          "Use the provided weather context as the main topic.",
+          "Mention current weather and tomorrow's forecast if available.",
+          "Do not send generic check-ins, command lists, memories, unrelated jokes, or non-weather thoughts.",
+          "Do not ask the user for weather data.",
+          "Do not include the rock name as a speaker label.",
         ].join(" "),
       },
       {
