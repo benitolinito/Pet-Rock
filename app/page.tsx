@@ -33,7 +33,7 @@ export default function Home() {
         </a>
 
         <p className="mt-6 text-center text-xs text-zinc-500">
-          created by{" "}
+          by{" "}
           <a
             className="underline transition hover:text-zinc-800"
             href="https://github.com/benitolinito"
