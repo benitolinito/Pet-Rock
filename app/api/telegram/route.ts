@@ -174,6 +174,13 @@ function looksLikeBareLocation(text: string) {
     /^[A-Za-z][A-Za-z\s,.'-]{1,79}$/.test(trimmed) &&
     !/^(?:yes|no|ok|okay|thanks|thank you|help|settings|status|start|pause|clear|commands)$/i.test(
       trimmed,
+    ) &&
+    !/^(?:what|what'?s|whats|how|when|where|why|who|can|could|should|would|is|are|do|does|did|tell|send)\b/i.test(
+      trimmed,
+    ) &&
+    !/\bweather\b/i.test(trimmed) &&
+    !/\b(?:i want|i need|please|can you|could you)\b/i.test(
+      trimmed,
     )
   );
 }
@@ -189,7 +196,7 @@ function shouldClassifyLocationIntent(text: string, previousOutbound?: string | 
     return true;
   }
 
-  const hasUpdateSignal = /\b(?:location|city|wrong|actually|instead|use|switch|move|moved|live|living|near|from|based in)\b/.test(
+  const hasUpdateSignal = /\b(?:location|city|wrong|actually|instead|use|want|need|switch|move|moved|live|living|near|from|based in)\b/.test(
     normalized,
   ) || /\b(?:i'?m|i am|we'?re|we are)\s+(?:in|near|at)\b/.test(normalized);
   const hasWeatherUpdateSignal =
@@ -304,7 +311,7 @@ async function updateLocationAndReply(args: {
   locationQuery: string;
   confirmation: (locationLabel: string) => string;
 }) {
-  const location = await geocodeLocation(args.locationQuery);
+  const location = await geocodeLocation(cleanLocationQuery(args.locationQuery));
 
   if (!location) {
     await replyAndLog({
@@ -327,7 +334,7 @@ async function updateLocationAndReply(args: {
     body: args.body,
     providerSid: providerSid(args.chatId, args.messageId),
   });
-  await args.supabase
+  const { error: updateError } = await args.supabase
     .from("rocks")
     .update({
       location_name: location.name,
@@ -338,6 +345,11 @@ async function updateLocationAndReply(args: {
       timezone,
     })
     .eq("id", args.rock.id);
+
+  if (updateError) {
+    throw updateError;
+  }
+
   await replyAndLog({
     chatId: args.chatId,
     rockId: args.rock.id,
@@ -346,6 +358,14 @@ async function updateLocationAndReply(args: {
   });
 
   return true;
+}
+
+function cleanLocationQuery(query: string) {
+  return query
+    .trim()
+    .replace(/[.!?]+$/g, "")
+    .replace(/^(?:i want|i need|please use|please set|use|set|switch to|change to)\s+/i, "")
+    .trim();
 }
 
 // Main function to handle incoming Telegram messages
@@ -615,7 +635,6 @@ export async function POST(request: Request) {
       looksLikeBareLocation(text)
         ? text
         : null;
-
     if (rock && barePromptLocation) {
       await updateLocationAndReply({
         chatId,
