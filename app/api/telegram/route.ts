@@ -178,6 +178,29 @@ function looksLikeBareLocation(text: string) {
   );
 }
 
+function shouldClassifyLocationIntent(text: string, previousOutbound?: string | null) {
+  const normalized = text.trim().toLowerCase();
+
+  if (!normalized || normalized.startsWith("/")) {
+    return false;
+  }
+
+  if (canTreatBareTextAsLocation(previousOutbound) && looksLikeBareLocation(text)) {
+    return true;
+  }
+
+  const hasUpdateSignal = /\b(?:location|city|wrong|actually|instead|use|switch|move|moved|live|living|near|from|based in)\b/.test(
+    normalized,
+  ) || /\b(?:i'?m|i am|we'?re|we are)\s+(?:in|near|at)\b/.test(normalized);
+  const hasWeatherUpdateSignal =
+    /\bweather\b/.test(normalized) &&
+    /\b(?:wrong|actually|instead|use|switch|change|set|for|in|near|at)\b/.test(
+      normalized,
+    );
+
+  return hasUpdateSignal || hasWeatherUpdateSignal;
+}
+
 //checks if the user wants to clear the chat history
 function looksLikeClearHistory(text: string) {
   return (
@@ -608,7 +631,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (rock) {
+    if (rock && shouldClassifyLocationIntent(text, previousOutbound?.body)) {
       const classified = await classifyTelegramIntent({
         text,
         previousOutbound: previousOutbound?.body ?? null,
