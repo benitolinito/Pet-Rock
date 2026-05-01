@@ -85,6 +85,14 @@ function adoptionPrompt() {
   return "hello. i am available for adoption. what should your rock be called?";
 }
 
+function nextCheckInDate() {
+  const minHours = 3;
+  const maxHours = 6;
+  const hours = minHours + Math.random() * (maxHours - minHours);
+
+  return new Date(Date.now() + hours * 60 * 60 * 1000);
+}
+
 // Formats a location for display
 function formatLocation(location: {
   name: string;
@@ -251,7 +259,8 @@ function formatSettings(rock: {
   longitude: number;
   timezone: string;
   paused: boolean;
-  last_daily_sent_on: string | null;
+  last_check_in_at: string | null;
+  next_check_in_at: string | null;
 }) {
   return [
     "Rock settings:",
@@ -260,7 +269,8 @@ function formatSettings(rock: {
     `location: ${formatStoredLocation(rock)}`,
     `timezone: ${rock.timezone}`,
     `updates: ${rock.paused ? "paused" : "active"}`,
-    `last daily message: ${rock.last_daily_sent_on ?? "not sent yet"}`,
+    `last check-in: ${rock.last_check_in_at ?? "not sent yet"}`,
+    `next check-in: ${rock.next_check_in_at ?? "not scheduled"}`,
   ].join("\n");
 }
 
@@ -391,7 +401,7 @@ export async function POST(request: Request) {
 
     const { data: rock } = await supabase
       .from("rocks")
-      .select("id, name, paused, personality_state, starting_vibe, location_name, location_region, location_country, latitude, longitude, timezone, last_daily_sent_on")
+      .select("id, name, paused, personality_state, starting_vibe, location_name, location_region, location_country, latitude, longitude, timezone, last_check_in_at, next_check_in_at")
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 
@@ -783,6 +793,7 @@ export async function POST(request: Request) {
             longitude: location.longitude,
             timezone,
             personality_state: createInitialPersonalityState(),
+            next_check_in_at: nextCheckInDate().toISOString(),
           })
           .select("id")
           .single();
@@ -836,7 +847,10 @@ export async function POST(request: Request) {
     if (text === "/start" || text.toLowerCase() === "start") {
       await supabase
         .from("rocks")
-        .update({ paused: false })
+        .update({
+          paused: false,
+          next_check_in_at: nextCheckInDate().toISOString(),
+        })
         .eq("id", rock.id);
     }
 

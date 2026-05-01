@@ -15,6 +15,8 @@ create table if not exists rocks (
   personality_state jsonb not null,
   paused boolean not null default false,
   last_daily_sent_on date,
+  last_check_in_at timestamptz,
+  next_check_in_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -27,6 +29,8 @@ alter table rocks
   add column if not exists location_country text,
   add column if not exists paused boolean not null default false,
   add column if not exists last_daily_sent_on date,
+  add column if not exists last_check_in_at timestamptz,
+  add column if not exists next_check_in_at timestamptz,
   add column if not exists updated_at timestamptz not null default now();
 
 alter table rocks
@@ -52,6 +56,10 @@ create table if not exists messages (
 
 create index if not exists messages_rock_id_created_at_idx
   on messages(rock_id, created_at desc);
+
+create index if not exists rocks_next_check_in_at_idx
+  on rocks(next_check_in_at)
+  where paused = false and telegram_chat_id is not null;
 
 create table if not exists telegram_onboarding_sessions (
   telegram_chat_id text primary key,
