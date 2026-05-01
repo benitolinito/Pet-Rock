@@ -2,12 +2,12 @@ import { siteConfig } from "@/lib/site";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-100 px-6 py-14 text-zinc-950">
+    <main className="flex min-h-screen items-center justify-center bg-[url('/rock_background.avif')] bg-cover bg-center px-6 py-14 text-zinc-950">
       <div className="w-full max-w-md">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
+        <section className="rounded-2xl border border-white/70 bg-white/90 p-8 shadow-sm backdrop-blur-sm">
           <div className="space-y-3">
             <h1 className="text-2xl font-semibold tracking-tight">
-              Pet Rock
+              My Pet Rock
             </h1>
             <p className="text-sm leading-6 text-zinc-600">
               Open the bot in Telegram, send /start, and follow the adoption
