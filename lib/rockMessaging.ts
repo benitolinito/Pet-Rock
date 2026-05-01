@@ -122,7 +122,7 @@ export async function handleInboundRockMessage(args: {
     const generated = await generateRockMessage({
       state: normalizePersonalityState(args.rock.personality_state),
       startingVibe: args.rock.starting_vibe ?? "chill",
-      weatherSummary: await getWeatherSummary(args.rock),
+      weatherSummary: await getWeatherSummary(args.rock, args.body),
       recentMessages: (recentMessages ?? []).reverse(),
       rockName: args.rock.name,
     });
@@ -147,25 +147,35 @@ async function getWeatherSummary(rock: {
   latitude?: number | null;
   longitude?: number | null;
   timezone?: string | null;
-}) {
+}, messageText: string) {
   if (typeof rock.latitude !== "number" || typeof rock.longitude !== "number") {
     return "No current weather context is available yet.";
   }
 
-  const [weather, forecast] = await Promise.all([
-    getWeather(rock.latitude, rock.longitude),
-    getForecast(rock.latitude, rock.longitude),
-  ]);
+  const weather = await getWeather(rock.latitude, rock.longitude);
   const condition = weather.weather[0]?.description ?? "unknown conditions";
   const temp = Math.round(weather.main.temp);
   const feelsLike = Math.round(weather.main.feels_like);
+  const currentSummary = `Current in ${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`;
+
+  if (!shouldIncludeForecast(messageText)) {
+    return currentSummary;
+  }
+
+  const forecast = await getForecast(rock.latitude, rock.longitude);
 
   return [
-    `Current in ${weather.name}: ${condition}, ${temp}F, feels like ${feelsLike}F.`,
+    currentSummary,
     summarizeForecastDays(forecast, rock.timezone ?? "UTC"),
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function shouldIncludeForecast(text: string) {
+  return /\b(?:tomorrow|forecast|weekend|later|next|upcoming|future|tonight|tonite|week|days|day after tomorrow|this week|rain later|snow later)\b/i.test(
+    text,
+  );
 }
 
 export function summarizeForecastDays(
