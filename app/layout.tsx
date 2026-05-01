@@ -20,6 +20,10 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  icons: {
+    icon: [{ url: "/rock_pic.ico?v=3", type: "image/x-icon" }],
+    shortcut: [{ url: "/rock_pic.ico?v=3", type: "image/x-icon" }],
+  },
   alternates: {
     canonical: "/",
   },
