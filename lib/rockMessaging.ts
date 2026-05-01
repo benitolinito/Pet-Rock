@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { generateRockMessage } from "@/lib/llm";
+import {
+  generateDailyWeatherRockMessage,
+  generateRockMessage,
+} from "@/lib/llm";
 import { createInitialPersonalityState } from "@/lib/personality";
 import { getForecast, getWeather } from "@/lib/weather";
 
@@ -319,17 +322,11 @@ export async function generateDailyRockMessage(args: {
       throw error;
     }
 
-    const generated = await generateRockMessage({
+    const generated = await generateDailyWeatherRockMessage({
       state: normalizePersonalityState(args.rock.personality_state),
       startingVibe: args.rock.starting_vibe ?? "chill",
       weatherSummary: args.weatherSummary,
-      recentMessages: [
-        ...(recentMessages ?? []).reverse(),
-        {
-          direction: "system",
-          body: "Send a proactive daily weather-aware update. The user did not message first.",
-        },
-      ],
+      recentMessages: (recentMessages ?? []).reverse(),
       rockName: args.rock.name,
     });
 

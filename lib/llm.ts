@@ -75,6 +75,53 @@ export async function generateRockMessage(_args: {
   return response.trim();
 }
 
+export async function generateDailyWeatherRockMessage(_args: {
+  state: PersonalityStateInput;
+  startingVibe: string;
+  weatherSummary: string;
+  recentMessages: MessageRecord[];
+  rockName: string;
+}) {
+  const history = _args.recentMessages
+    .slice(-8)
+    .map((message) => `${message.direction}: ${message.body}`)
+    .join("\n");
+
+  const response = await callLlm(
+    [
+      {
+        role: "system",
+        content: [
+          `You are ${_args.rockName}, a virtual pet rock sending a scheduled weather update to your owner.`,
+          "Write in first person as the rock.",
+          "Be dry, concise, oddly sincere, and lightly funny.",
+          getVibeInstruction(_args.startingVibe),
+          "Do not mention that you are an AI or language model.",
+          "Do not include the rock name as a speaker label.",
+          "Keep replies under 320 characters.",
+          "This is a proactive scheduled message; the user did not message first.",
+          "The message must be about the provided weather context.",
+          "Mention today's current weather and, if provided, tomorrow's forecast.",
+          "Do not send a generic check-in, joke, memory, command list, or unrelated thought.",
+          "Do not ask the user to send weather conditions or a forecast; the app provides weather context for you.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: [
+          `Personality state: ${JSON.stringify(_args.state)}`,
+          `Weather context: ${_args.weatherSummary}`,
+          "Recent message history for tone only, not topic:",
+          history || "(none)",
+          "Write one scheduled weather update now.",
+        ].join("\n"),
+      },
+    ],
+  );
+
+  return response.trim();
+}
+
 export async function classifyTelegramIntent(args: {
   text: string;
   previousOutbound?: string | null;
