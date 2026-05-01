@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { classifyTelegramIntent } from "@/lib/llm";
 import { createInitialPersonalityState } from "@/lib/personality";
 import {
   handleInboundRockMessage,
@@ -156,28 +157,25 @@ function getChangeLocation(text: string) {
   return match[1].trim() || null;
 }
 
-// Recognizes natural corrections without treating every city mention as a setting change.
-function getImplicitLocationChange(text: string) {
-  const trimmed = text.trim();
-  const patterns = [
-    /^(?:no[,.]?\s*)?(?:i'?m|i am|we'?re|we are)\s+(?:in|near|at)\s+(.+)$/i,
-    /^(?:no[,.]?\s*)?(?:my location is|the location is|location is)\s+(.+)$/i,
-    /^(?:no[,.]?\s*)?i mean\s+(.+)$/i,
-    /^(?:no[,.]?\s*)?(?:use|try|set it to|make it|switch to)\s+(.+)$/i,
-    /^(?:no[,.]?\s*)?actually[,.]?\s+(.+)$/i,
-    /^no[,.]?\s+(.+)$/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = trimmed.match(pattern);
-    const location = match?.[1]?.trim();
-
-    if (location && !location.startsWith("/") && location.length <= 80) {
-      return location.replace(/[.!?]+$/g, "").trim() || null;
-    }
+function canTreatBareTextAsLocation(previousOutboundBody?: string | null) {
+  if (!previousOutboundBody) {
+    return false;
   }
 
-  return null;
+  return /(?:what city should i use for your weather|could not find that place|send .*weather|use .*for your weather|wrong city|wrong location|where are you|what city)/i.test(
+    previousOutboundBody,
+  );
+}
+
+function looksLikeBareLocation(text: string) {
+  const trimmed = text.trim();
+
+  return (
+    /^[A-Za-z][A-Za-z\s,.'-]{1,79}$/.test(trimmed) &&
+    !/^(?:yes|no|ok|okay|thanks|thank you|help|settings|status|start|pause|clear|commands)$/i.test(
+      trimmed,
+    )
+  );
 }
 
 //checks if the user wants to clear the chat history
@@ -270,8 +268,61 @@ async function replyAndLog(args: {
     body: args.text,
     providerSid: sent?.message_id
       ? providerSid(args.chatId, sent.message_id)
-      : null,
+    : null,
   });
+}
+
+async function updateLocationAndReply(args: {
+  chatId: string;
+  messageId: number;
+  supabase: ReturnType<typeof createSupabaseAdminClient>;
+  rock: { id: string; name: string };
+  body: string;
+  locationQuery: string;
+  confirmation: (locationLabel: string) => string;
+}) {
+  const location = await geocodeLocation(args.locationQuery);
+
+  if (!location) {
+    await replyAndLog({
+      chatId: args.chatId,
+      rockId: args.rock.id,
+      supabase: args.supabase,
+      text: rockSays(
+        args.rock.name,
+        "i could not find that place. try a city like New York, Austin TX, or London.",
+      ),
+    });
+    return true;
+  }
+
+  const timezone = getTimezone(location.latitude, location.longitude);
+
+  await recordInboundRockMessage({
+    supabase: args.supabase,
+    rockId: args.rock.id,
+    body: args.body,
+    providerSid: providerSid(args.chatId, args.messageId),
+  });
+  await args.supabase
+    .from("rocks")
+    .update({
+      location_name: location.name,
+      location_region: location.state,
+      location_country: location.country,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      timezone,
+    })
+    .eq("id", args.rock.id);
+  await replyAndLog({
+    chatId: args.chatId,
+    rockId: args.rock.id,
+    supabase: args.supabase,
+    text: rockSays(args.rock.name, args.confirmation(formatLocation(location))),
+  });
+
+  return true;
 }
 
 // Main function to handle incoming Telegram messages
@@ -510,86 +561,73 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      const location = await geocodeLocation(newLocation);
-
-      if (!location) {
-        await replyAndLog({
-          chatId,
-          rockId: rock.id,
-          supabase,
-          text: rockSays(
-            rock.name,
-            "i could not find that place. try a city like New York, Austin TX, or London.",
-          ),
-        });
-        return NextResponse.json({ ok: true });
-      }
-
-      const timezone = getTimezone(location.latitude, location.longitude);
-
-      await recordInboundRockMessage({
-        supabase,
-        rockId: rock.id,
-        body: text,
-        providerSid: providerSid(chatId, message.message_id),
-      });
-      await supabase
-        .from("rocks")
-        .update({
-          location_name: location.name,
-          location_region: location.state,
-          location_country: location.country,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          timezone,
-        })
-        .eq("id", rock.id);
-      await replyAndLog({
+      await updateLocationAndReply({
         chatId,
-        rockId: rock.id,
+        messageId: message.message_id,
         supabase,
-        text: rockSays(
-          rock.name,
-          `i will use ${formatLocation(location)} for your weather now. relocation accepted with minimal rolling.`,
-        ),
+        rock,
+        body: text,
+        locationQuery: newLocation,
+        confirmation: (locationLabel) =>
+          `i will use ${locationLabel} for your weather now. relocation accepted with minimal rolling.`,
       });
 
       return NextResponse.json({ ok: true });
     }
 
-    const implicitLocation = rock ? getImplicitLocationChange(text) : null;
+    const { data: previousOutbound } = rock
+      ? await supabase
+          .from("messages")
+          .select("body")
+          .eq("rock_id", rock.id)
+          .eq("direction", "outbound")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
 
-    if (rock && implicitLocation) {
-      const location = await geocodeLocation(implicitLocation);
+    const barePromptLocation =
+      rock &&
+      canTreatBareTextAsLocation(previousOutbound?.body) &&
+      looksLikeBareLocation(text)
+        ? text
+        : null;
 
-      if (location) {
-        const timezone = getTimezone(location.latitude, location.longitude);
+    if (rock && barePromptLocation) {
+      await updateLocationAndReply({
+        chatId,
+        messageId: message.message_id,
+        supabase,
+        rock,
+        body: text,
+        locationQuery: barePromptLocation,
+        confirmation: (locationLabel) =>
+          `understood. i will use ${locationLabel} for your weather now. my sense of place has been revised.`,
+      });
 
-        await recordInboundRockMessage({
-          supabase,
-          rockId: rock.id,
-          body: text,
-          providerSid: providerSid(chatId, message.message_id),
-        });
-        await supabase
-          .from("rocks")
-          .update({
-            location_name: location.name,
-            location_region: location.state,
-            location_country: location.country,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            timezone,
-          })
-          .eq("id", rock.id);
-        await replyAndLog({
+      return NextResponse.json({ ok: true });
+    }
+
+    if (rock) {
+      const classified = await classifyTelegramIntent({
+        text,
+        previousOutbound: previousOutbound?.body ?? null,
+      });
+
+      if (
+        classified.intent === "update_location" &&
+        classified.confidence === "high" &&
+        classified.location
+      ) {
+        await updateLocationAndReply({
           chatId,
-          rockId: rock.id,
+          messageId: message.message_id,
           supabase,
-          text: rockSays(
-            rock.name,
-            `understood. i will use ${formatLocation(location)} for your weather now. my sense of place has been revised.`,
-          ),
+          rock,
+          body: text,
+          locationQuery: classified.location,
+          confirmation: (locationLabel) =>
+            `understood. i will use ${locationLabel} for your weather now. my sense of place has been revised.`,
         });
 
         return NextResponse.json({ ok: true });

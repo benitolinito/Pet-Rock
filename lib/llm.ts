@@ -14,6 +14,12 @@ type MessageRecord = {
   body: string;
 };
 
+export type TelegramIntent = {
+  intent: "update_location" | "chat";
+  location: string | null;
+  confidence: "high" | "medium" | "low";
+};
+
 export async function updatePersonalityState(_args: {
   state: PersonalityStateInput;
   weatherSummary: string;
@@ -47,7 +53,8 @@ export async function generateRockMessage(_args: {
           "Do not mention that you are an AI or language model.",
           "Do not include the rock name as a speaker label.",
           "Keep replies under 320 characters.",
-          "If the user asks about future weather, answer from the forecast context when available.",
+          "If the user asks about weather, answer from the weather context when available.",
+          "Never ask the user to send weather conditions or a forecast; the app provides weather context for you.",
           "Do not list commands or instructions during casual conversation.",
           "Only if the latest user message explicitly asks for help, commands, or what they can do, briefly explain they can say pause, start, rename, or clear history.",
         ].join(" "),
@@ -66,6 +73,102 @@ export async function generateRockMessage(_args: {
   );
 
   return response.trim();
+}
+
+export async function classifyTelegramIntent(args: {
+  text: string;
+  previousOutbound?: string | null;
+}): Promise<TelegramIntent> {
+  const fallback: TelegramIntent = {
+    intent: "chat",
+    location: null,
+    confidence: "low",
+  };
+  const response = await callLlm(
+    [
+      {
+        role: "system",
+        content: [
+          "Classify whether a Telegram message is asking to change the saved city used for weather.",
+          "Return only minified JSON with keys: intent, location, confidence.",
+          'intent must be "update_location" or "chat".',
+          'confidence must be "high", "medium", or "low".',
+          "Use update_location only when the user is explicitly correcting, setting, or answering the city/location for weather.",
+          "Do not classify wishes, travel plans, examples, or casual city mentions as location updates.",
+          "If the previous bot message asked what city to use for weather, a bare city name can be high confidence.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          text: args.text,
+          previousBotMessage: args.previousOutbound ?? null,
+        }),
+      },
+    ],
+    0,
+  );
+
+  return parseTelegramIntent(response) ?? fallback;
+}
+
+function parseTelegramIntent(text: string): TelegramIntent | null {
+  const parsed = parseJsonObject(text);
+
+  if (!parsed) {
+    return null;
+  }
+
+  const intent = parsed.intent;
+  const confidence = parsed.confidence;
+  const location =
+    typeof parsed.location === "string" && parsed.location.trim()
+      ? parsed.location.trim()
+      : null;
+
+  if (intent !== "update_location" && intent !== "chat") {
+    return null;
+  }
+
+  if (
+    confidence !== "high" &&
+    confidence !== "medium" &&
+    confidence !== "low"
+  ) {
+    return null;
+  }
+
+  return {
+    intent,
+    location: intent === "update_location" ? location : null,
+    confidence,
+  };
+}
+
+function parseJsonObject(text: string) {
+  try {
+    const parsed = JSON.parse(text);
+
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+
+    if (!match) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(match[0]);
+
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 function getVibeInstruction(startingVibe: string) {
