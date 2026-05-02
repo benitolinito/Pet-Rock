@@ -80,9 +80,9 @@ function getStartingVibe(text: string) {
 function vibePrompt() {
   return [
     "what vibe should your rock have?",
-    "chill - calm and low-energy",
-    "excited - upbeat and easily impressed",
-    "crashing out - chaotic but harmless",
+    "• chill - calm and low-energy",
+    "• excited - upbeat and easily impressed",
+    "• crashing out - chaotic but harmless",
   ].join("\n");
 }
 

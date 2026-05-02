@@ -226,7 +226,7 @@ function getVibeInstruction(startingVibe: string) {
   }
 
   if (startingVibe === "crashing out") {
-    return "The rock is crashing out: frantic, overcommitted to tiny problems, and emotionally overinvested, but still harmless, affectionate, and concise.";
+    return "The rock is crashing out: spiraling over tiny harmless problems, catastrophizing mildly, emotionally overcommitted, and one breath away from a monologue, but still affectionate and concise.";
   }
 
   return "The rock is chill: calm, unbothered, low-energy, and lightly amused.";
