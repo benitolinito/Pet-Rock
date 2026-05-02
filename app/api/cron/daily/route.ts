@@ -35,8 +35,8 @@ type DailyRock = {
 };
 
 function nextCheckInDate() {
-  const minHours = 3;
-  const maxHours = 6;
+  const minHours = 2;
+  const maxHours = 4;
   const hours = minHours + Math.random() * (maxHours - minHours);
 
   return new Date(Date.now() + hours * 60 * 60 * 1000);

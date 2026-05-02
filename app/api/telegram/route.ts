@@ -91,8 +91,8 @@ function adoptionPrompt() {
 }
 
 function nextCheckInDate() {
-  const minHours = 3;
-  const maxHours = 6;
+  const minHours = 2;
+  const maxHours = 4;
   const hours = minHours + Math.random() * (maxHours - minHours);
 
   return new Date(Date.now() + hours * 60 * 60 * 1000);
@@ -539,7 +539,7 @@ export async function POST(request: Request) {
 
       await replyAndLog({
         chatId,
-        text: `your rock has been unadopted. your visible Telegram chat is unchanged.\n\n${adoptionPrompt()}`,
+        text: "your rock has been unadopted. what should your new rock be called?",
       });
 
       return NextResponse.json({ ok: true });
