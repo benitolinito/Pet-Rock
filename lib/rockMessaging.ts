@@ -105,6 +105,7 @@ export async function handleInboundRockMessage(args: {
     rockName: args.rock.name,
     text: args.body,
   });
+  const wantsWeather = shouldIncludeWeather(args.body);
 
   try {
     const { data: recentMessages, error } = await args.supabase
@@ -118,21 +119,34 @@ export async function handleInboundRockMessage(args: {
       throw error;
     }
 
+    const weatherSummary = await getWeatherSummary(args.rock, args.body);
     const generated = await generateRockMessage({
       state: normalizePersonalityState(args.rock.personality_state),
       startingVibe: args.rock.starting_vibe ?? "chill",
-      weatherSummary: await getWeatherSummary(args.rock, args.body),
+      weatherSummary,
       recentMessages: (recentMessages ?? []).reverse(),
       rockName: args.rock.name,
     });
 
     if (!generated) {
+      if (wantsWeather && hasWeatherContext(weatherSummary)) {
+        return rockSays(args.rock.name, weatherSummary);
+      }
+
       return fallbackReply;
     }
 
     return rockSays(args.rock.name, generated);
   } catch (error) {
     console.error("Rock reply generation failed", error);
+
+    if (wantsWeather) {
+      return rockSays(
+        args.rock.name,
+        "i tried to check the weather, but the sky paperwork failed. try again in a minute.",
+      );
+    }
+
     return fallbackReply;
   }
 }
@@ -175,6 +189,10 @@ function shouldIncludeWeather(text: string) {
   return /\b(?:weather|forecast|temperature|temp|rain|raining|snow|snowing|storm|cloud|cloudy|sunny|wind|windy|humid|humidity|hot|cold|warm|cool|degrees|umbrella|tomorrow|weekend|tonight|tonite)\b/i.test(
     text,
   );
+}
+
+function hasWeatherContext(summary: string) {
+  return !/^Weather context omitted|^No current weather context/i.test(summary);
 }
 
 function shouldIncludeForecast(text: string) {

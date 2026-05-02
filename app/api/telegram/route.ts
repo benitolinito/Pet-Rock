@@ -54,7 +54,7 @@ function getAdoptName(text: string) {
 
 // Gets the starting vibe for the rock
 function getStartingVibe(text: string) {
-  const normalized = text.trim().toLowerCase();
+  const normalized = text.trim().toLowerCase().replace(/[-_]+/g, " ");
 
   if (normalized === "chill") {
     return "chill";
@@ -64,7 +64,12 @@ function getStartingVibe(text: string) {
     return "dramatic";
   }
 
-  if (normalized === "crashing" || normalized === "crashing out") {
+  if (
+    normalized === "crashing" ||
+    normalized === "crashing out" ||
+    normalized === "crash out" ||
+    normalized === "crashout"
+  ) {
     return "crashing out";
   }
 
@@ -813,7 +818,7 @@ export async function POST(request: Request) {
           supabase,
           text: rockSays(
             onboardingSession.rock_name,
-            `i have been adopted with a ${onboardingSession.starting_vibe} disposition. i will use ${formatLocation(location)} for your weather and report back when ready.`,
+            `i have been adopted with a ${onboardingSession.starting_vibe} personality. i will use ${formatLocation(location)} for your weather updates.`,
           ),
         });
         return NextResponse.json({ ok: true });
