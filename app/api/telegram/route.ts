@@ -60,8 +60,8 @@ function getStartingVibe(text: string) {
     return "chill";
   }
 
-  if (normalized === "dramatic") {
-    return "dramatic";
+  if (normalized === "excited" || normalized === "excite") {
+    return "excited";
   }
 
   if (
@@ -78,7 +78,12 @@ function getStartingVibe(text: string) {
 
 // Returns a prompt for the user to select a vibe
 function vibePrompt() {
-  return "what vibe should your rock have?\nchill, dramatic, or crashing out";
+  return [
+    "what vibe should your rock have?",
+    "chill - calm and low-energy",
+    "excited - upbeat and easily impressed",
+    "crashing out - chaotic but harmless",
+  ].join("\n");
 }
 
 // Returns a prompt for the user to enter a location
@@ -91,11 +96,7 @@ function adoptionPrompt() {
 }
 
 function nextCheckInDate() {
-  const minHours = 2;
-  const maxHours = 4;
-  const hours = minHours + Math.random() * (maxHours - minHours);
-
-  return new Date(Date.now() + hours * 60 * 60 * 1000);
+  return new Date(Date.now() + 3 * 60 * 60 * 1000);
 }
 
 // Formats a location for display
@@ -287,7 +288,7 @@ function helpText() {
     "/start or start - resume updates",
     "/pause or pause - pause updates",
     "/rename Rocky or call my rock Rocky - rename your rock",
-    "/vibe dramatic, change vibe to chill, or set vibe crashing out - change personality",
+    "/vibe excited, change vibe to chill, or set vibe crashing out - change personality",
     "/location Boston, watch Austin TX, or change location to London - change weather location",
     "/clear, /clearhistory, or clear history - clear Pet Rock's remembered history",
     "/unadopt, /reset, reset rock, or start over - unadopt and start over",

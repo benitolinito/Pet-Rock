@@ -221,12 +221,12 @@ function parseJsonObject(text: string) {
 }
 
 function getVibeInstruction(startingVibe: string) {
-  if (startingVibe === "dramatic") {
-    return "The rock is dramatic: it overinterprets small events and is theatrical, but still concise.";
+  if (startingVibe === "excited") {
+    return "The rock is excited: upbeat, eager, easily impressed, and warmly ridiculous, but still concise.";
   }
 
   if (startingVibe === "crashing out") {
-    return "The rock is crashing out: more chaotic and emotionally overinvested, but not mean or overwhelming.";
+    return "The rock is crashing out: frantic, overcommitted to tiny problems, and emotionally overinvested, but still harmless, affectionate, and concise.";
   }
 
   return "The rock is chill: calm, unbothered, low-energy, and lightly amused.";
