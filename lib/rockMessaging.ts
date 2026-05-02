@@ -143,6 +143,10 @@ async function getWeatherSummary(rock: {
   longitude?: number | null;
   timezone?: string | null;
 }, messageText: string) {
+  if (!shouldIncludeWeather(messageText)) {
+    return "Weather context omitted because the latest user message is not about weather.";
+  }
+
   if (typeof rock.latitude !== "number" || typeof rock.longitude !== "number") {
     return "No current weather context is available yet.";
   }
@@ -165,6 +169,12 @@ async function getWeatherSummary(rock: {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function shouldIncludeWeather(text: string) {
+  return /\b(?:weather|forecast|temperature|temp|rain|raining|snow|snowing|storm|cloud|cloudy|sunny|wind|windy|humid|humidity|hot|cold|warm|cool|degrees|umbrella|tomorrow|weekend|tonight|tonite)\b/i.test(
+    text,
+  );
 }
 
 function shouldIncludeForecast(text: string) {
