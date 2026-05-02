@@ -818,7 +818,7 @@ export async function POST(request: Request) {
           supabase,
           text: rockSays(
             onboardingSession.rock_name,
-            `i have been adopted with a ${onboardingSession.starting_vibe} personality. i will use ${formatLocation(location)} for your weather updates.`,
+            `i have been adopted with a ${onboardingSession.starting_vibe} personality. ${formatLocation(location)} is now my weather-watching spot.`,
           ),
         });
         return NextResponse.json({ ok: true });
