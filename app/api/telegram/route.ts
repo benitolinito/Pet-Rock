@@ -9,7 +9,7 @@ import {
 } from "@/lib/rockMessaging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramMessage } from "@/lib/telegram";
-import { geocodeLocation, getTimezone } from "@/lib/weather";
+import { getTimezone, resolveLocation } from "@/lib/weather";
 
 // Represents a Telegram update
 type TelegramUpdate = {
@@ -108,6 +108,16 @@ function formatLocation(location: {
   return [location.name, location.state, location.country]
     .filter(Boolean)
     .join(", ");
+}
+
+function ambiguousLocationPrompt(matches: Array<{
+  name: string;
+  state: string | null;
+  country: string;
+}>) {
+  const options = matches.slice(0, 4).map(formatLocation).join("; ");
+
+  return `i found multiple places with that name: ${options}. send the city with state or country, like Hanover NH or Hanover Germany.`;
 }
 
 function formatStoredLocation(rock: {
@@ -327,9 +337,9 @@ async function updateLocationAndReply(args: {
   locationQuery: string;
   confirmation: (locationLabel: string) => string;
 }) {
-  const location = await geocodeLocation(cleanLocationQuery(args.locationQuery));
+  const locationResult = await resolveLocation(cleanLocationQuery(args.locationQuery));
 
-  if (!location) {
+  if (locationResult.status === "not_found") {
     await replyAndLog({
       chatId: args.chatId,
       rockId: args.rock.id,
@@ -342,6 +352,17 @@ async function updateLocationAndReply(args: {
     return true;
   }
 
+  if (locationResult.status === "ambiguous") {
+    await replyAndLog({
+      chatId: args.chatId,
+      rockId: args.rock.id,
+      supabase: args.supabase,
+      text: rockSays(args.rock.name, ambiguousLocationPrompt(locationResult.matches)),
+    });
+    return true;
+  }
+
+  const location = locationResult.location;
   const timezone = getTimezone(location.latitude, location.longitude);
 
   await recordInboundRockMessage({
@@ -773,9 +794,9 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
-        const location = await geocodeLocation(text);
+        const locationResult = await resolveLocation(text);
 
-        if (!location) {
+        if (locationResult.status === "not_found") {
           await replyAndLog({
             chatId,
             text: "I could not find that place. Try a city like New York, Austin TX, or London.",
@@ -783,6 +804,15 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
+        if (locationResult.status === "ambiguous") {
+          await replyAndLog({
+            chatId,
+            text: ambiguousLocationPrompt(locationResult.matches),
+          });
+          return NextResponse.json({ ok: true });
+        }
+
+        const location = locationResult.location;
         const timezone = getTimezone(location.latitude, location.longitude);
 
         const { data: newRock, error } = await supabase
@@ -819,7 +849,7 @@ export async function POST(request: Request) {
           supabase,
           text: rockSays(
             onboardingSession.rock_name,
-            `i have been adopted with a ${onboardingSession.starting_vibe} personality. ${formatLocation(location)} is now my weather-watching spot.`,
+            `i have been adopted with a ${onboardingSession.starting_vibe} personality. ${formatLocation(location)} is now my weather-watching spot. Ask me what's the weather like!`,
           ),
         });
         return NextResponse.json({ ok: true });

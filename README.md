@@ -3,6 +3,8 @@
 A Telegram pet rock that chats about the weather, remembers conversations, and
 slowly develops a personality over time.
 
+Live site: https://my-pet-rock.vercel.app/
+
 ## Status
 
 The app currently focuses on Telegram bot adoption, weather-aware chat, daily

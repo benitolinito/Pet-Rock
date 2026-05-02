@@ -42,6 +42,19 @@ type GeocodingResponse = Array<{
   state?: string;
 }>;
 
+export type GeocodedLocation = {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  state: string | null;
+};
+
+export type GeocodeLocationResult =
+  | { status: "found"; location: GeocodedLocation }
+  | { status: "ambiguous"; matches: GeocodedLocation[] }
+  | { status: "not_found" };
+
 // Maps US state abbreviations to their full names
 const US_STATE_NAMES: Record<string, string> = {
   AL: "Alabama",
@@ -98,19 +111,48 @@ const US_STATE_NAMES: Record<string, string> = {
 
 // Geocodes a location based on a query string
 export async function geocodeLocation(query: string) {
-  const usQuery = buildOpenWeatherUsQuery(query);
+  const result = await resolveLocation(query);
 
-  return (
-    (usQuery ? await geocodeOpenWeather(usQuery) : null) ??
-    (await geocodeOpenWeather(query)) ??
-    (await geocodeOpenWeather(expandUsState(query)))
-  );
+  return result.status === "found" ? result.location : null;
 }
 
-async function geocodeOpenWeather(query: string) {
+export async function resolveLocation(query: string): Promise<GeocodeLocationResult> {
+  const usQuery = buildOpenWeatherUsQuery(query);
+  const explicitQuery = Boolean(usQuery) || hasCountryQualifier(query);
+
+  if (usQuery) {
+    const [location] = await geocodeOpenWeather(usQuery, 1);
+
+    if (location) {
+      return { status: "found", location };
+    }
+  }
+
+  const locations = await geocodeOpenWeather(query, 5);
+
+  if (locations.length === 0) {
+    const expandedLocations = await geocodeOpenWeather(expandUsState(query), 5);
+
+    return expandedLocations[0]
+      ? { status: "found", location: expandedLocations[0] }
+      : { status: "not_found" };
+  }
+
+  const ambiguousMatches = explicitQuery
+    ? []
+    : getAmbiguousMatches(locations);
+
+  if (ambiguousMatches.length > 1) {
+    return { status: "ambiguous", matches: ambiguousMatches };
+  }
+
+  return { status: "found", location: locations[0] };
+}
+
+async function geocodeOpenWeather(query: string, limit: number) {
   const params = new URLSearchParams({
     q: query,
-    limit: "1",
+    limit: String(limit),
     appid: getEnv("OPENWEATHER_API_KEY"),
   });
 
@@ -125,19 +167,14 @@ async function geocodeOpenWeather(query: string) {
   }
 
   const data = (await response.json()) as GeocodingResponse;
-  const location = data[0];
 
-  if (!location) {
-    return null;
-  }
-
-  return {
+  return data.map((location) => ({
     name: location.name,
     latitude: location.lat,
     longitude: location.lon,
     country: location.country,
     state: location.state ?? null,
-  };
+  }));
 }
 
 function buildOpenWeatherUsQuery(query: string) {
@@ -148,6 +185,35 @@ function buildOpenWeatherUsQuery(query: string) {
   }
 
   return `${match[1].trim()},${match[2].toUpperCase()},US`;
+}
+
+function hasCountryQualifier(query: string) {
+  return /(?:,\s*[A-Za-z]{2,3}|[,\s]+(?:USA|US|United States|UK|United Kingdom|Canada|Germany|France|Italy|Spain|Mexico|Australia))$/i.test(
+    query.trim(),
+  );
+}
+
+function getAmbiguousMatches(locations: GeocodedLocation[]) {
+  const [first] = locations;
+
+  if (!first) {
+    return [];
+  }
+
+  const sameName = locations.filter(
+    (location) => location.name.toLowerCase() === first.name.toLowerCase(),
+  );
+  const firstHasUsAlternative =
+    first.country !== "US" && sameName.some((location) => location.country === "US");
+  const multipleUsStates =
+    first.country === "US" &&
+    new Set(
+      sameName
+        .filter((location) => location.country === "US")
+        .map((location) => location.state),
+    ).size > 1;
+
+  return firstHasUsAlternative || multipleUsStates ? sameName : [];
 }
 
 // Expands a US state abbreviation to its full name

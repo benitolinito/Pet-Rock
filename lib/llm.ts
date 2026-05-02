@@ -143,6 +143,7 @@ export async function classifyTelegramIntent(args: {
           'confidence must be "high", "medium", or "low".',
           "Use update_location only when the user is explicitly correcting, setting, or answering the city/location for weather.",
           "For location, extract only the place name, not words like 'I want', 'use', 'weather', or 'instead'.",
+          "Preserve state, region, and country qualifiers in the location, such as 'Hanover NH' or 'Paris France'.",
           "Do not classify wishes, travel plans, examples, or casual city mentions as location updates.",
           "If the previous bot message asked what city to use for weather, a bare city name can be high confidence.",
         ].join(" "),
