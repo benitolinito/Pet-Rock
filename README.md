@@ -1,4 +1,4 @@
-# Pet Rock
+# My Pet Rock (DALI Fullstack Challenge)
 
 A Telegram companion bot where users adopt a virtual pet rock that chats, remembers recent conversations, answers weather questions, and sends scheduled weather-aware check-ins.
 
@@ -18,14 +18,19 @@ https://t.me/my_pet_rock_bot
 
 ## Demo
 
-<img src="demo/rock.gif" alt="demo" width="600" />
+<img src="demo/rock.gif" alt="demo" width="690" />
+
+## Landing Page
+
+<img src="demo/website.png" alt="website" width="690" />
 
 ## Screenshots
 
 <p>
-  <img src="demo/screenshot1.PNG" alt="screenshot 1" width="250" />
-  <img src="demo/screenshot2.PNG" alt="screenshot 2" width="250" />
-  <img src="demo/screenshot3.PNG" alt="screenshot 3" width="250" />
+  <img src="demo/screenshot1.PNG" alt="screenshot 1" width="230" />
+  <img src="demo/screenshot2.PNG" alt="screenshot 2" width="230" />
+  <img src="demo/screenshot3.PNG" alt="screenshot 3" width="230" />
+  <img src="demo/weather-notifcation.jpg" alt="weather notification" width="690" />
 </p>
 
 ## Set Up Instructions
@@ -85,7 +90,7 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 
 - Inspiration: I wanted to make a Pet Rock chatbot companion because the idea felt cute and funny. I also wanted it to do more than just chat, so I added weather updates based on the user's location.
 - Impact: Users can adopt a rock, give it a personality, chat with it in Telegram, and receive weather-aware check-ins throughout the day. It also keeps people from feeling lonely!
-- New Technology: The project used Telegram webhooks, Vercel Cron, Supabase Postgres, OpenWeather geocoding/forecast APIs, and OpenWebUI-compatible LLM calls inside a Next.js app.
+- New Technology: The project used Telegram webhooks, Vercel Cron, Supabase Postgres, OpenWeather geocoding/forecast APIs, and OpenWebUI-compatible LLM (GPT 5.4) calls inside a Next.js app.
 
 ## Technical Rationale
 
@@ -104,19 +109,12 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 
 ## Technical Tradeoffs and Choices
 
-- Weather context is only fetched for weather-related user messages. Early
-  versions passed weather into every chat, which made normal replies too
-  weather-focused.
-- Forecast data is only fetched when the user asks about future weather, such as
-  tomorrow or the weekend. This reduces latency and OpenWeather usage.
-- Scheduled messages use a separate weather-focused LLM prompt from normal chat.
-  This prevents cron check-ins from drifting into unrelated jokes or generic
-  companion messages.
-- Location handling uses OpenWeather geocoding and asks for clarification when a
-  city name is ambiguous. For example, bare city names may match multiple
-  countries or states, so the bot asks the user to include a state or country.
-- Check-ins are fixed at 3 hours, but actual delivery can be up to 30 minutes
-  later because Vercel Cron only wakes the app on its configured interval.
+- Originally I was going to use Twilio and have the pet rock bot message via SMS texting.   However, I ran into many issues trying to get the phone number to pass toll-free verification; Twilio seems to only allow businesses to use their SMS service. Thus, I opted for a Telegram bot.
+- Weather context is only fetched for weather-related user messages. Early versions passed weather into every chat, which made normal replies too weather-focused.
+- Forecast data is only fetched when the user asks about future weather, such as tomorrow or the weekend. This reduces latency and OpenWeather usage.
+- Scheduled messages use a separate weather-focused LLM prompt from normal chat. This prevents cron check-ins from drifting into unrelated jokes or generic companion messages.
+- Location handling uses OpenWeather geocoding and asks for clarification when a city name is ambiguous. For example, when typing 'Hanover', the LLM would I was referring to Hanover, Germany instead of Hanover, NH. Now it asks for confirmation if the location is ambiguous.
+- Check-ins are fixed at 3 hours, but actual delivery can be up to 30 minutes later because Vercel Cron only wakes the app on its configured interval.
 
 ## Bugs
 
@@ -129,8 +127,7 @@ words like "crash out" to "crashing out".
 
 ## AI Usage
 
-- ChatGPT/Codex was used for project planning, debugging, refactoring, prompt
-  design for LLM calls, choosing method for scheduling weather message, weather context, and Telegram command behavior.
+- ChatGPT/Codex was used for project planning, debugging, refactoring. I also used it to help improve prompt design for LLM calls, choosing a method for scheduling weather message (Vercel Cron), and to help me understand the OpenWeather and Telegram APIs.
 - Specific prompt examples:
 
 ```text
