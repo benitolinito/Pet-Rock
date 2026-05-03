@@ -16,14 +16,17 @@ Telegram bot:
 
 https://t.me/my_pet_rock_bot
 
-## Screenshots and Videos
+## Demo
 
-| Demo |
-| --- |
-| <img src="demo/rock.gif" alt="demo" width="300" /> |
-| <img src="demo/screenshot1.PNG" alt="screenshot 1" width="300" /> |
-| <img src="demo/screenshot2.PNG" alt="screenshot 2" width="300" /> |
-| <img src="demo/screenshot3.PNG" alt="screenshot 3" width="300" /> |
+<img src="demo/rock.gif" alt="demo" width="600" />
+
+## Screenshots
+
+<p>
+  <img src="demo/screenshot1.PNG" alt="screenshot 1" width="250" />
+  <img src="demo/screenshot2.PNG" alt="screenshot 2" width="250" />
+  <img src="demo/screenshot3.PNG" alt="screenshot 3" width="250" />
+</p>
 
 ## Set Up Instructions
 
