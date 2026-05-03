@@ -18,13 +18,12 @@ https://t.me/my_pet_rock_bot
 
 ## Screenshots and Videos
 
-Add screenshots or a demo GIF here:
-
-```html
-<img src="demo_screenshots/home.png" alt="home" width="600" />
-<img src="demo_screenshots/telegram_onboarding.png" alt="telegram onboarding" width="600" />
-<img src="demo_screenshots/weather_reply.png" alt="weather reply" width="600" />
-```
+| Demo |
+| --- |
+| <img src="demo/rock.gif" alt="demo" width="300" /> |
+| <img src="demo/screenshot1.PNG" alt="screenshot 1" width="300" /> |
+| <img src="demo/screenshot2.PNG" alt="screenshot 2" width="300" /> |
+| <img src="demo/screenshot3.PNG" alt="screenshot 3" width="300" /> |
 
 ## Set Up Instructions
 
