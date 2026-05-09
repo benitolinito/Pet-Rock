@@ -117,7 +117,6 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 
 ## Bugs
 
-- Telegram stopped replying after the Vercel URL changed because the webhook was still pointing at the old deployment. Resetting the Telegram webhook fixed it.
 - Scheduled cron messages originally reused the normal chat prompt, which caused proactive updates to drift into non-weather-related content. A dedicated scheduled-weather prompt fixed this.
 - Normal chat originally received weather context on every message, causing replies like "hi" and "how are you" to mention weather too often. Weather context is now gated by message intent/keywords.
 - Location correction was tricky because inputs like "Hanover" can geocode to the wrong country. The app now asks for clarification when geocoding results are ambiguous.
@@ -143,22 +142,18 @@ The rock keeps mentioning weather during normal small talk. How should I separat
 weather context from regular chat context?
 ```
 
-This led to fetching weather only for weather-related messages and keeping
-scheduled weather prompts separate from normal conversation prompts.
+This led to fetching weather only for weather-related messages and keeping scheduled weather prompts separate from normal conversation prompts.
 
 ```text
 OpenWeather is resolving a user's city to the wrong country. How can I make
 location handling more reliable without hardcoding city names?
 ```
 
-This led to fetching multiple geocoding candidates and asking users for
-state/country clarification when a location is ambiguous.
+This led to fetching multiple geocoding candidates and asking users for state/country clarification when a location is ambiguous.
 
 ```text
 My Telegram bot route is getting too large. What is a safe refactor that does not
 risk changing behavior?
 ```
 
-This led to extracting onboarding helpers, command parsing, and location
-formatting into smaller modules while keeping the webhook flow in
-`app/api/telegram/route.ts`.
+This led to extracting onboarding helpers, command parsing, and location formatting into smaller modules while keeping the webhook flow in `app/api/telegram/route.ts`.
