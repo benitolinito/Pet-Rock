@@ -6,17 +6,11 @@ import {
 import { createInitialPersonalityState } from "@/lib/personality";
 import { getForecast, getWeather } from "@/lib/weather";
 
-export type MessageChannel = "telegram";
-
 export function rockSays(rockName: string, message: string) {
   return `${rockName}:\n${message}`;
 }
 
-export function buildRockReply(args: {
-  channel: MessageChannel;
-  rockName: string;
-  text: string;
-}) {
+function buildRockReply(args: { rockName: string; text: string }) {
   const normalized = args.text.trim().toLowerCase();
 
   if (normalized === "help" || normalized === "/help") {
@@ -80,7 +74,6 @@ export async function recordOutboundRockMessage(args: {
 
 export async function handleInboundRockMessage(args: {
   supabase: SupabaseClient;
-  channel: MessageChannel;
   rock: {
     id: string;
     name: string;
@@ -101,7 +94,6 @@ export async function handleInboundRockMessage(args: {
   });
 
   const fallbackReply = buildRockReply({
-    channel: args.channel,
     rockName: args.rock.name,
     text: args.body,
   });
@@ -201,7 +193,7 @@ function shouldIncludeForecast(text: string) {
   );
 }
 
-export function summarizeForecastDays(
+function summarizeForecastDays(
   forecast: Awaited<ReturnType<typeof getForecast>>,
   timezone: string,
 ) {
@@ -324,7 +316,6 @@ function getLocalDate(unixSeconds: number, timezone: string) {
 
 export async function generateDailyRockMessage(args: {
   supabase: SupabaseClient;
-  channel: MessageChannel;
   rock: {
     id: string;
     name: string;

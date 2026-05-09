@@ -42,7 +42,7 @@ type GeocodingResponse = Array<{
   state?: string;
 }>;
 
-export type GeocodedLocation = {
+type GeocodedLocation = {
   name: string;
   latitude: number;
   longitude: number;
@@ -50,7 +50,7 @@ export type GeocodedLocation = {
   state: string | null;
 };
 
-export type GeocodeLocationResult =
+type GeocodeLocationResult =
   | { status: "found"; location: GeocodedLocation }
   | { status: "ambiguous"; matches: GeocodedLocation[] }
   | { status: "not_found" };
@@ -108,13 +108,6 @@ const US_STATE_NAMES: Record<string, string> = {
   WI: "Wisconsin",
   WY: "Wyoming",
 };
-
-// Geocodes a location based on a query string
-export async function geocodeLocation(query: string) {
-  const result = await resolveLocation(query);
-
-  return result.status === "found" ? result.location : null;
-}
 
 export async function resolveLocation(query: string): Promise<GeocodeLocationResult> {
   const usQuery = buildOpenWeatherUsQuery(query);

@@ -84,7 +84,6 @@ async function processRock(args: {
     ]);
     const message = await generateDailyRockMessage({
       supabase: args.supabase,
-      channel: "telegram",
       rock,
       weatherSummary: summarizeWeather({
         weather,

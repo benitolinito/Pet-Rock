@@ -14,20 +14,11 @@ type MessageRecord = {
   body: string;
 };
 
-export type TelegramIntent = {
+type TelegramIntent = {
   intent: "update_location" | "chat";
   location: string | null;
   confidence: "high" | "medium" | "low";
 };
-
-export async function updatePersonalityState(_args: {
-  state: PersonalityStateInput;
-  weatherSummary: string;
-  inboundMessage?: string;
-}) {
-  void _args;
-  throw new Error("updatePersonalityState is not implemented.");
-}
 
 export async function generateRockMessage(_args: {
   state: PersonalityStateInput;
@@ -259,7 +250,7 @@ type LlmMessage = {
   content: string;
 };
 
-export async function callLlm(messages: LlmMessage[], temperature?: number) {
+async function callLlm(messages: LlmMessage[], temperature?: number) {
   const response = await getClient().chat.completions.create({
     model: getEnv("OPENWEBUI_MODEL"),
     messages,

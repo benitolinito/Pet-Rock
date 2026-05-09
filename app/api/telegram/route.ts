@@ -689,7 +689,6 @@ export async function POST(request: Request) {
 
     const reply = await handleInboundRockMessage({
       supabase,
-      channel: "telegram",
       rock,
       body: text,
       inboundProviderSid: providerSid(chatId, message.message_id),

@@ -18,24 +18,3 @@ export function createInitialPersonalityState(): PersonalityState {
     daysOld: 0,
   };
 }
-
-// Function to build prompts for the LLM based on the rock's personality state and other context
-export function buildStateUpdatePrompt(args: {
-  state: PersonalityState;
-  weatherSummary: string;
-  inboundMessage?: string;
-}) {
-  void args;
-  // return system + user prompt strings
-}
-
-// Function to build prompts for the LLM to generate outgoing messages based on the rock's personality state and other context
-export function buildMessagePrompt(args: {
-  state: PersonalityState;
-  weatherSummary: string;
-  recentMessages: { direction: string; body: string }[];
-  rockName: string;
-}) {
-  void args;
-  // return system + user prompt strings
-}
