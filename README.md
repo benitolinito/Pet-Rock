@@ -111,9 +111,8 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 
 - Originally I was going to use Twilio and have the pet rock bot message via SMS texting.   However, I ran into many issues trying to get the phone number to pass toll-free verification; Twilio seems to only allow businesses to use their SMS service. Thus, I opted for a Telegram bot.
 - Weather context is only fetched for weather-related user messages. Early versions passed weather into every chat, which made normal replies too weather-focused.
-- Forecast data is only fetched when the user asks about future weather, such as tomorrow or the weekend. This reduces latency and OpenWeather usage.
 - Scheduled messages use a separate weather-focused LLM prompt from normal chat. This prevents cron check-ins from drifting into unrelated jokes or generic companion messages.
-- Location handling uses OpenWeather geocoding and asks for clarification when a city name is ambiguous. For example, when typing 'Hanover', the LLM would I was referring to Hanover, Germany instead of Hanover, NH. Now it asks for confirmation if the location is ambiguous.
+- Location handling uses OpenWeather geocoding and asks for clarification when a city name is ambiguous. For example, when typing 'Hanover', the LLM thought I was referring to Hanover, Germany instead of Hanover, NH. Now it asks for confirmation if the location is ambiguous.
 - Check-ins are fixed at 3 hours, but actual delivery can be up to 30 minutes later because Vercel Cron only wakes the app on its configured interval.
 
 ## Bugs
